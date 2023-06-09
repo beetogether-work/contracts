@@ -287,6 +287,19 @@ contract Hive {
         emit FundsShared(_proposalRequestId, amountToShare);
     }
 
+    /**
+     * @notice Claims the honey fees of a given token. For now the fees can be claimed by any
+     *         member of the group. In the future, there will be a governance process to decide what to do with the fees.
+     */
+    function claimHoneyFees(address _tokenAddress) public onlyMember {
+        if (_tokenAddress == address(0)) {
+            _transferBalance(msg.sender, _tokenAddress, address(this).balance);
+        } else {
+            uint256 balance = IERC20(_tokenAddress).balanceOf(address(this));
+            _transferBalance(msg.sender, _tokenAddress, balance);
+        }
+    }
+
     // =========================== Receive function ==============================
 
     receive() external payable {}

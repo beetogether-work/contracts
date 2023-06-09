@@ -459,6 +459,25 @@ const tests = (isEth: boolean) => {
       expect(proposalRequest.sharedAmount).to.be.equal(proposalAmount);
     });
   });
+
+  describe('Claim', async () => {
+    let tx: ContractTransaction;
+
+    before(async () => {
+      // Bob claims the funds
+      tx = await hive.connect(bob).claimHoneyFees(tokenAddress);
+    });
+
+    it('Send the balance to the user', async () => {
+      const feeAmount = proposalAmount.mul(honeyFee).div(FEE_DIVIDER);
+
+      if (isEth) {
+        await expect(tx).to.changeEtherBalances([bob], [feeAmount]);
+      } else {
+        await expect(tx).to.changeTokenBalances(simpleERC20, [bob], [feeAmount]);
+      }
+    });
+  });
 };
 
 describe('BeeTogether', () => {
