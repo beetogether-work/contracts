@@ -16,6 +16,11 @@ export enum MintStatus {
   PUBLIC,
 }
 
+export enum ProposalRequestStatus {
+  Pending, // Pending to be executed
+  Executed, // Executed
+}
+
 // export enum DisputeStatus {
 //   Waiting,
 //   Appealable,

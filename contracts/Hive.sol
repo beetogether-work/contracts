@@ -38,6 +38,11 @@ contract Hive {
 
     mapping(uint256 => ProposalRequest) public proposalRequests;
 
+    enum ProposalRequestStatus {
+        Pending, // Pending to be executed
+        Executed // Executed
+    }
+
     struct ProposalRequest {
         uint256 ownerId;
         uint256[] members;
@@ -48,6 +53,7 @@ contract Hive {
         uint256 platformId;
         string dataUri;
         uint256 expirationDate;
+        ProposalRequestStatus status;
         // bytes signature;
     }
 
@@ -190,7 +196,8 @@ contract Hive {
             rateAmount: _rateAmount,
             platformId: _platformId,
             dataUri: _dataUri,
-            expirationDate: _expirationDate
+            expirationDate: _expirationDate,
+            status: ProposalRequestStatus.Pending
             // signature: _signature
         });
         nextProposalRequestId.increment();
@@ -208,6 +215,9 @@ contract Hive {
         require(senderId != proposalRequest.ownerId, "Owner cannot execute its own proposal request");
         require(members[senderId], "Sender is not a member");
 
+        // Check proposal request is pending
+        require(proposalRequest.status == ProposalRequestStatus.Pending, "Proposal request is not pending");
+
         // Create proposal
         talentLayerService.createProposal(
             groupId(),
@@ -219,6 +229,9 @@ contract Hive {
             proposalRequest.expirationDate,
             ""
         );
+
+        // Mark proposal request as executed
+        proposalRequests[_proposalRequestId].status = ProposalRequestStatus.Executed;
 
         emit ProposalRequestExecuted(_proposalRequestId, senderId);
     }

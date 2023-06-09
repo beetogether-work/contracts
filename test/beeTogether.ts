@@ -7,7 +7,7 @@ import {
   TalentLayerPlatformID,
   TalentLayerService,
 } from '../typechain-types/contracts/tests/talentlayer';
-import { ETH_ADDRESS, MintStatus } from '../utils/constants';
+import { ETH_ADDRESS, MintStatus, ProposalRequestStatus } from '../utils/constants';
 import { ContractTransaction } from 'ethers';
 import { getSignature } from '../utils/signature';
 
@@ -199,6 +199,7 @@ describe('HiveFactory', () => {
         expect(proposalRequest.rateAmount).to.equal(proposalAmount);
         expect(proposalRequest.dataUri).to.equal(proposalDataUri);
         expect(proposalRequest.expirationDate).to.equal(proposalExpirationDate);
+        expect(proposalRequest.status).to.equal(ProposalRequestStatus.Pending);
       });
     });
   });
@@ -238,6 +239,11 @@ describe('HiveFactory', () => {
         expect(proposal.rateAmount).to.equal(proposalAmount);
         expect(proposal.dataUri).to.equal(proposalDataUri);
         expect(proposal.expirationDate).to.equal(proposalExpirationDate);
+      });
+
+      it('Fails if proposal request has already been executed', async () => {
+        const tx = hive.connect(carol).executeProposalRequest(proposalRequestId);
+        await expect(tx).to.be.revertedWith('Proposal request is not pending');
       });
     });
   });
