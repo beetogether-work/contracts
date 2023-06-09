@@ -15,7 +15,7 @@ task('deploy', 'Deploy all contracts')
     console.log('Balance: ', ethers.utils.formatEther(balance));
 
     const talentLayerID = await ethers.getContractAt(
-      'ITalentLayerID',
+      'TalentLayerID',
       getDeploymentAddress(network.name, 'TalentLayerID'),
     );
 

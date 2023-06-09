@@ -1,6 +1,11 @@
 import { loadJSON, saveJSON } from '../utils/files';
 
-export const CONTRACT_NAMES = ['TalentLayerID', 'HiveFactory', 'Hive'] as const;
+export const CONTRACT_NAMES = [
+  'HiveFactory',
+  'Hive',
+  'TalentLayerID',
+  'TalentLayerPlatformID',
+] as const;
 
 export type ContractName = (typeof CONTRACT_NAMES)[number];
 

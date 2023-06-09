@@ -1,24 +1,28 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { ethers } from 'hardhat';
-import { HiveFactory, TalentLayerID } from '../typechain-types';
+import { Hive, HiveFactory, TalentLayerID } from '../typechain-types';
 import { deploy } from '../utils/deploy';
 import { expect } from 'chai';
 import { TalentLayerPlatformID } from '../typechain-types/contracts/tests/talentlayer';
 import { MintStatus } from '../utils/constants';
 import { ContractTransaction } from 'ethers';
+import { getSignature } from '../utils/signature';
 
 describe('HiveFactory', () => {
   let deployer: SignerWithAddress,
     platformOwner: SignerWithAddress,
-    alice: SignerWithAddress,
+    groupOwner: SignerWithAddress,
+    bob: SignerWithAddress,
     talentLayerID: TalentLayerID,
     talentLayerPlatformID: TalentLayerPlatformID,
-    hiveFactory: HiveFactory;
+    hiveAddress: string,
+    hiveFactory: HiveFactory,
+    hive: Hive;
 
   const platformId = 1;
 
   before(async () => {
-    [deployer, platformOwner, alice] = await ethers.getSigners();
+    [deployer, platformOwner, groupOwner, bob] = await ethers.getSigners();
     [hiveFactory, talentLayerID, talentLayerPlatformID] = await deploy();
 
     // Disable whitelist for reserved handles
@@ -34,35 +38,53 @@ describe('HiveFactory', () => {
 
     const groupHandle = 'my-hive';
     const ownerHandle = 'alice';
-    const dataUri = '';
 
     before(async () => {
-      tx = await hiveFactory
-        .connect(alice)
-        .createHive(platformId, groupHandle, ownerHandle, dataUri);
+      tx = await hiveFactory.connect(groupOwner).createHive(platformId, groupHandle, ownerHandle);
+      const receipt = await tx.wait();
+
+      hiveAddress = receipt.events?.find((e) => e.event === 'HiveCreated')?.args?.hiveAddress;
+      hive = await ethers.getContractAt('Hive', hiveAddress);
     });
 
     it('Mints a TalentLayer ID to the owner', async () => {
-      await expect(tx).to.changeTokenBalance(talentLayerID, alice, 1);
+      await expect(tx).to.changeTokenBalance(talentLayerID, groupOwner, 1);
 
-      const aliceId = await talentLayerID.ids(alice.address);
-      const profile = await talentLayerID.connect(alice).profiles(aliceId);
+      const groupOwnerId = await talentLayerID.ids(groupOwner.address);
+      const profile = await talentLayerID.connect(groupOwner).profiles(groupOwnerId);
 
       expect(profile.platformId).to.equal(platformId);
       expect(profile.handle).to.equal(ownerHandle);
     });
 
-    it('Mints a TalentLayer ID to the group', async () => {
-      await expect(tx).to.changeTokenBalance(talentLayerID, alice, 1);
+    it('Sets the owner of the group', async () => {
+      const owner = await hive.owner();
+      expect(owner).to.equal(groupOwner.address);
+    });
 
-      const receipt = await tx.wait();
-      const hiveAddress = receipt.events?.find((e) => e.event === 'HiveCreated')?.args?.hiveAddress;
+    it('Mints a TalentLayer ID to the group', async () => {
+      await expect(tx).to.changeTokenBalance(talentLayerID, groupOwner, 1);
 
       const groupId = await talentLayerID.ids(hiveAddress);
-      const profile = await talentLayerID.connect(alice).profiles(groupId);
+      const profile = await talentLayerID.connect(groupOwner).profiles(groupId);
 
       expect(profile.platformId).to.equal(platformId);
       expect(profile.handle).to.equal(groupHandle);
+    });
+  });
+
+  describe('Join Group', async () => {
+    let tx: ContractTransaction;
+
+    before(async () => {
+      const signature = await getSignature(groupOwner);
+
+      // Bob joins the group
+      tx = await hive.connect(bob).join(signature);
+    });
+
+    it('', async () => {
+      await expect(tx).to.not.be.reverted;
     });
   });
 });

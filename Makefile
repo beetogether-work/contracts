@@ -11,9 +11,15 @@ deploy-verify:
 
 #-------------- PLAYGROUND ----------------#
 
+setup-tl:
+	npx hardhat run scripts/playground/0-setupTl.ts --network $(NETWORK)
+
+create-hive:
+	npx hardhat run scripts/playground/1-createHive.ts --network $(NETWORK)
+
 #-------------- SETUP ----------------#
 
-setup: deploy
+setup: deploy setup-tl create-hive
 
 #-------------- SUBGRAPH ----------------#
 
