@@ -74,12 +74,13 @@ contract Hive {
     /**
      * @dev Emitted when a new user joins the hive.
      */
-    event MemberJoined(uint256 userId);
+    event MemberJoined(uint256 hiveId, uint256 userId);
 
     /**
      * @dev Emitted when a new proposal request is created
      */
     event ProposalRequestCreated(
+        uint256 hiveId,
         uint256 indexed id,
         uint256 ownerId,
         uint256[] members,
@@ -96,19 +97,19 @@ contract Hive {
     /**
      * @dev Emitted when a new proposal request is executed
      */
-    event ProposalRequestExecuted(uint256 indexed proposalRequestId, uint256 executor);
+    event ProposalRequestExecuted(uint256 hiveId, uint256 indexed proposalRequestId, uint256 executor);
 
     /**
      * @dev Emitted when a new proposal request is executed
      * @param proposalRequestId The id of the proposal request
      * @param amount The amount of funds shared
      */
-    event FundsShared(uint256 indexed proposalRequestId, uint256 amount);
+    event FundsShared(uint256 hiveId, uint256 indexed proposalRequestId, uint256 amount);
 
     /**
      * @dev Emitted when the honey fees are claimed
      */
-    event HoneyFeesClaimed(uint256 userId);
+    event HoneyFeesClaimed(uint256 hiveId, uint256 userId);
 
     /**
      * @dev Emitted when the data uri is udpated
@@ -166,7 +167,7 @@ contract Hive {
     /**
      * @notice Returns the TalentLayer ID of the hive.
      */
-    function groupId() public view returns (uint256) {
+    function hiveId() public view returns (uint256) {
         return talentLayerId.ids(address(this));
     }
 
@@ -190,7 +191,7 @@ contract Hive {
         // Add to members
         members[userId] = true;
 
-        emit MemberJoined(userId);
+        emit MemberJoined(hiveId(), userId);
     }
 
     /**
@@ -258,7 +259,7 @@ contract Hive {
 
         // Create proposal
         talentLayerService.createProposal(
-            groupId(),
+            hiveId(),
             proposalRequest.serviceId,
             proposalRequest.rateToken,
             proposalRequest.rateAmount,
@@ -271,7 +272,7 @@ contract Hive {
         // Mark proposal request as executed
         proposalRequests[_proposalRequestId].status = ProposalRequestStatus.Executed;
 
-        emit ProposalRequestExecuted(_proposalRequestId, senderId);
+        emit ProposalRequestExecuted(hiveId(), _proposalRequestId, senderId);
     }
 
     /**
@@ -297,7 +298,7 @@ contract Hive {
         // Update shared amount
         proposalRequests[_proposalRequestId].sharedAmount += amountToShare;
 
-        emit FundsShared(_proposalRequestId, amountToShare);
+        emit FundsShared(hiveId(), _proposalRequestId, amountToShare);
     }
 
     /**
@@ -312,7 +313,7 @@ contract Hive {
             _transferBalance(msg.sender, _tokenAddress, balance);
         }
 
-        emit HoneyFeesClaimed(talentLayerId.ids(msg.sender));
+        emit HoneyFeesClaimed(hiveId(), talentLayerId.ids(msg.sender));
     }
 
     /**
@@ -335,6 +336,7 @@ contract Hive {
         ProposalRequest storage proposalRequest = proposalRequests[_proposalRequestId];
 
         emit ProposalRequestCreated(
+            hiveId(),
             _proposalRequestId,
             proposalRequest.ownerId,
             proposalRequest.members,
@@ -367,7 +369,6 @@ contract Hive {
      * @notice Mint a TalentLayer ID to a given address.
      */
     function _mintTlId(address _address, uint256 _platformId, string memory _handle) public payable returns (uint256) {
-        console.log("minting");
         (bool success, bytes memory data) = address(talentLayerId).call{value: msg.value}(
             abi.encodeWithSignature("mintForAddress(address,uint256,string)", _address, _platformId, _handle)
         );

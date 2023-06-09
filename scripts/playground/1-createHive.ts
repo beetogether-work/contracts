@@ -1,5 +1,5 @@
 import hre, { ethers } from 'hardhat';
-import { getDeploymentAddress } from '../../.deployment/deploymentManager';
+import { getDeploymentAddress, setDeploymentAddress } from '../../.deployment/deploymentManager';
 
 async function main() {
   const network = hre.network.name;
@@ -21,7 +21,11 @@ async function main() {
   const tx = await hiveFactory
     .connect(groupOwner)
     .createHive(platformId, groupHandle, ownerHandle, honeyFee);
-  await tx.wait();
+  const receipt = await tx.wait();
+
+  const hiveAddress = receipt.events?.find((e) => e.event === 'HiveCreated')?.args?.hiveAddress;
+
+  setDeploymentAddress(network, 'Hive', hiveAddress);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

@@ -55,9 +55,8 @@ async function main() {
   // Dave creates a service
   const serviceDataUri = 'QmNSARUuUMHkFcnSzrCAhmZkmQu7ViK18sPkg48xnbAmv3';
   const aliceId = 1;
-  await talentLayerService.connect(alice).createService(aliceId, 0, serviceDataUri, []);
-
-  console.log('Minted platform id');
+  const platformId = 1;
+  await talentLayerService.connect(alice).createService(aliceId, platformId, serviceDataUri, []);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

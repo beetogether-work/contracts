@@ -17,9 +17,15 @@ setup-tl:
 create-hive:
 	npx hardhat run scripts/playground/1-createHive.ts --network $(NETWORK)
 
+update-hive-data:
+	npx hardhat run scripts/playground/2-updateHiveData.ts --network $(NETWORK)
+
+join-hive:
+	npx hardhat run scripts/playground/3-joinHive.ts --network $(NETWORK)
+
 #-------------- SETUP ----------------#
 
-setup: deploy setup-tl create-hive
+setup: deploy setup-tl create-hive update-hive-data join-hive
 
 #-------------- SUBGRAPH ----------------#
 
