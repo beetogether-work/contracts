@@ -102,6 +102,11 @@ contract Hive {
      */
     event FundsShared(uint256 indexed proposalRequestId, uint256 amount);
 
+    /**
+     * @dev Emitted when the honey fees are claimed
+     */
+    event HoneyFeesClaimed(uint256 userId);
+
     // =========================== Modifiers ==============================
 
     /**
@@ -298,6 +303,8 @@ contract Hive {
             uint256 balance = IERC20(_tokenAddress).balanceOf(address(this));
             _transferBalance(msg.sender, _tokenAddress, balance);
         }
+
+        emit HoneyFeesClaimed(talentLayerId.ids(msg.sender));
     }
 
     // =========================== Receive function ==============================
