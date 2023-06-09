@@ -7,7 +7,6 @@ import { TalentLayerPlatformID } from '../typechain-types/contracts/tests/talent
 import { ETH_ADDRESS, MintStatus } from '../utils/constants';
 import { ContractTransaction } from 'ethers';
 import { getSignature } from '../utils/signature';
-import exp from 'constants';
 
 describe('HiveFactory', () => {
   let deployer: SignerWithAddress,
@@ -15,6 +14,7 @@ describe('HiveFactory', () => {
     groupOwner: SignerWithAddress,
     bob: SignerWithAddress,
     carol: SignerWithAddress,
+    dave: SignerWithAddress,
     talentLayerID: TalentLayerID,
     talentLayerPlatformID: TalentLayerPlatformID,
     hiveAddress: string,
@@ -25,13 +25,12 @@ describe('HiveFactory', () => {
   const mintFee = 100;
 
   const groupOwnerTlId = 1;
-  const hiveTlId = 2;
+  // const hiveTlId = 2;
   const bobTlId = 3;
-  const carolTlId = 4;
-  const groupOwnerHandle = 'alice';
+  // const carolTlId = 4;
 
   before(async () => {
-    [deployer, platformOwner, groupOwner, bob] = await ethers.getSigners();
+    [deployer, platformOwner, groupOwner, bob, carol, dave] = await ethers.getSigners();
     [hiveFactory, talentLayerID, talentLayerPlatformID] = await deploy();
 
     // Disable whitelist for reserved handles
@@ -47,12 +46,14 @@ describe('HiveFactory', () => {
     let tx: ContractTransaction;
 
     const groupHandle = 'my-hive';
-    const ownerHandle = 'alice';
+    const groupOwnerHandle = 'alice';
 
     before(async () => {
-      tx = await hiveFactory.connect(groupOwner).createHive(platformId, groupHandle, ownerHandle, {
-        value: mintFee * 2,
-      });
+      tx = await hiveFactory
+        .connect(groupOwner)
+        .createHive(platformId, groupHandle, groupOwnerHandle, {
+          value: mintFee * 2,
+        });
       const receipt = await tx.wait();
 
       hiveAddress = receipt.events?.find((e) => e.event === 'HiveCreated')?.args?.hiveAddress;
@@ -66,7 +67,7 @@ describe('HiveFactory', () => {
       const profile = await talentLayerID.connect(groupOwner).profiles(groupOwnerId);
 
       expect(profile.platformId).to.equal(platformId);
-      expect(profile.handle).to.equal(ownerHandle);
+      expect(profile.handle).to.equal(groupOwnerHandle);
     });
 
     it('Sets the owner of the group', async () => {
@@ -121,31 +122,39 @@ describe('HiveFactory', () => {
   });
 
   describe('Create proposal request', async () => {
-    // it('Fails if ', async () => {});
+    const proposalRequestId = 1;
+    const serviceId = 1;
+    const proposalToken = ETH_ADDRESS;
+    const proposalAmount = 1000;
+    const proposalDataUri = 'QmNSARUuUMHkFcnSzrCAhmZkmQu7ViK18sPkg48xnbAmv4';
+    const now = Math.floor(Date.now() / 1000);
+    const proposalExpirationDate = now + 60 * 60 * 24 * 15;
+
+    const proposalParams: [number, string, number, number, string, number] = [
+      serviceId,
+      proposalToken,
+      proposalAmount,
+      platformId,
+      proposalDataUri,
+      proposalExpirationDate,
+    ];
+
+    it('Fails if user is not member of the group', async () => {
+      const tx = hive.connect(dave).createProposalRequest(...proposalParams, [bobTlId], [100]);
+
+      await expect(tx).to.be.revertedWith('Sender is not a member');
+    });
+
+    it('Fails if the sum of the shares is not 100', async () => {
+      const tx = hive.connect(bob).createProposalRequest(...proposalParams, [bobTlId], [50]);
+
+      await expect(tx).to.be.revertedWith('Shares sum is not 100%');
+    });
 
     describe('Successfull creation of proposal request', async () => {
-      const proposalRequestId = 1;
-      const serviceId = 1;
-      const proposalToken = ETH_ADDRESS;
-      const proposalAmount = 1000;
-      const proposalDataUri = 'QmNSARUuUMHkFcnSzrCAhmZkmQu7ViK18sPkg48xnbAmv4';
-      const now = Math.floor(Date.now() / 1000);
-      const proposalExpirationDate = now + 60 * 60 * 24 * 15;
-
       before(async () => {
         // Bob creates a proposal request
-        await hive
-          .connect(bob)
-          .createProposalRequest(
-            serviceId,
-            proposalToken,
-            proposalAmount,
-            platformId,
-            proposalDataUri,
-            proposalExpirationDate,
-            [bobTlId],
-            [100],
-          );
+        await hive.connect(bob).createProposalRequest(...proposalParams, [bobTlId], [100]);
       });
 
       it('Updates the proposal request data', async () => {

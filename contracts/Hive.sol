@@ -128,7 +128,12 @@ contract Hive {
             require(members[_members[i]], "Member is not a member of the hive");
         }
 
-        // TODO: check shares are valid (sum is 100%)
+        // Check shares are valid (sum is 100%)
+        uint256 totalShares = 0;
+        for (uint256 i = 0; i < _shares.length; i++) {
+            totalShares += _shares[i];
+        }
+        require(totalShares == 100, "Shares sum is not 100%");
 
         uint256 id = nextProposalRequestId.current();
         proposalRequests[id] = ProposalRequest({
