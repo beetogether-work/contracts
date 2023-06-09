@@ -37,6 +37,9 @@ contract Hive {
     // Owner of the group
     address public owner;
 
+    // Uri of the group metadata
+    string public dataUri;
+
     // Members of the group (by TalentLayer ID)
     mapping(uint256 => bool) public members;
 
@@ -71,7 +74,7 @@ contract Hive {
     /**
      * @dev Emitted when a new user joins the hive.
      */
-    event MemberJoined(uint256 groupId, uint256 userId);
+    event MemberJoined(uint256 userId);
 
     /**
      * @dev Emitted when a new proposal request is created
@@ -106,6 +109,11 @@ contract Hive {
      * @dev Emitted when the honey fees are claimed
      */
     event HoneyFeesClaimed(uint256 userId);
+
+    /**
+     * @dev Emitted when the data uri is udpated
+     */
+    event DataUriUpdated(string dataUri);
 
     // =========================== Modifiers ==============================
 
@@ -182,7 +190,7 @@ contract Hive {
         // Add to members
         members[userId] = true;
 
-        emit MemberJoined(groupId(), userId);
+        emit MemberJoined(userId);
     }
 
     /**
@@ -305,6 +313,16 @@ contract Hive {
         }
 
         emit HoneyFeesClaimed(talentLayerId.ids(msg.sender));
+    }
+
+    /**
+     * @notice Updates the data URI of the hive.
+     */
+    function updateDataUri(string memory _dataUri) public onlyMember {
+        require(bytes(_dataUri).length == 46, "Invalid cid");
+        dataUri = _dataUri;
+
+        emit DataUriUpdated(_dataUri);
     }
 
     // =========================== Receive function ==============================
