@@ -90,7 +90,14 @@ contract Hive {
     /**
      * @dev Emitted when a new proposal request is executed
      */
-    event ProposalRequestExecuted(uint256 indexed id, uint256 executor);
+    event ProposalRequestExecuted(uint256 indexed proposalRequestId, uint256 executor);
+
+    /**
+     * @dev Emitted when a new proposal request is executed
+     * @param proposalRequestId The id of the proposal request
+     * @param amount The amount of funds shared
+     */
+    event FundsShared(uint256 indexed proposalRequestId, uint256 amount);
 
     // =========================== Modifiers ==============================
 
@@ -272,6 +279,8 @@ contract Hive {
 
         // Update shared amount
         proposalRequests[_proposalRequestId].sharedAmount += amountToShare;
+
+        emit FundsShared(_proposalRequestId, amountToShare);
     }
 
     // =========================== Receive function ==============================
