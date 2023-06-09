@@ -1,6 +1,6 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { ethers } from 'hardhat';
-import { Hive, HiveFactory, TalentLayerID } from '../typechain-types';
+import { ERC20, Hive, HiveFactory, TalentLayerID } from '../typechain-types';
 import { deploy } from '../utils/deploy';
 import { expect } from 'chai';
 import {
@@ -18,7 +18,7 @@ import {
 import { BigNumber, ContractTransaction } from 'ethers';
 import { getSignature } from '../utils/signature';
 
-describe('HiveFactory', () => {
+const tests = (isEth: boolean) => {
   let deployer: SignerWithAddress,
     platformOwner: SignerWithAddress,
     groupOwner: SignerWithAddress,
@@ -29,8 +29,10 @@ describe('HiveFactory', () => {
     talentLayerPlatformID: TalentLayerPlatformID,
     talentLayerService: TalentLayerService,
     talentLayerEscrow: TalentLayerEscrow,
-    hiveAddress: string,
     hiveFactory: HiveFactory,
+    simpleERC20: ERC20,
+    hiveAddress: string,
+    tokenAddress: string,
     hive: Hive;
 
   const daveTlId = 1;
@@ -45,7 +47,6 @@ describe('HiveFactory', () => {
   const transactionId = 1;
 
   const proposalRequestId = 1;
-  const proposalToken = ETH_ADDRESS;
   const proposalAmount = ethers.utils.parseEther('100');
   const proposalDataUri = 'QmNSARUuUMHkFcnSzrCAhmZkmQu7ViK18sPkg48xnbAmv4';
   const now = Math.floor(Date.now() / 1000);
@@ -60,13 +61,23 @@ describe('HiveFactory', () => {
     [hiveFactory, talentLayerID, talentLayerPlatformID, talentLayerService, talentLayerEscrow] =
       await deploy();
 
+    if (!isEth) {
+      // Deploy SimpleERC20
+      const SimpleERC20 = await ethers.getContractFactory('SimpleERC20');
+      simpleERC20 = await SimpleERC20.deploy();
+      await simpleERC20.deployed();
+      tokenAddress = simpleERC20.address;
+    } else {
+      tokenAddress = ETH_ADDRESS;
+    }
+
     // Disable whitelist for reserved handles
     await talentLayerID.connect(deployer).updateMintStatus(MintStatus.PUBLIC);
     await talentLayerID.connect(deployer).updateMintFee(mintFee);
 
     // Whitelist a list of authorized tokens
 
-    const allowedTokenList = [ETH_ADDRESS];
+    const allowedTokenList = [tokenAddress];
     const minTokenWhitelistTransactionAmount = 10;
     for (const tokenAddress of allowedTokenList) {
       await talentLayerService
@@ -171,14 +182,18 @@ describe('HiveFactory', () => {
   });
 
   describe('Create proposal request', async () => {
-    const proposalParams: [number, string, BigNumber, number, string, number] = [
-      serviceId,
-      proposalToken,
-      proposalAmount,
-      platformId,
-      proposalDataUri,
-      proposalExpirationDate,
-    ];
+    let proposalParams: [number, string, BigNumber, number, string, number];
+
+    before(async () => {
+      proposalParams = [
+        serviceId,
+        tokenAddress,
+        proposalAmount,
+        platformId,
+        proposalDataUri,
+        proposalExpirationDate,
+      ];
+    });
 
     it('Fails if user is not member of the group', async () => {
       const tx = hive
@@ -213,7 +228,7 @@ describe('HiveFactory', () => {
         const proposalRequest = await hive.proposalRequests(proposalRequestId);
         expect(proposalRequest.ownerId).to.equal(bobTlId);
         expect(proposalRequest.serviceId).to.equal(serviceId);
-        expect(proposalRequest.rateToken).to.equal(proposalToken);
+        expect(proposalRequest.rateToken).to.equal(tokenAddress);
         expect(proposalRequest.rateAmount).to.equal(proposalAmount);
         expect(proposalRequest.dataUri).to.equal(proposalDataUri);
         expect(proposalRequest.expirationDate).to.equal(proposalExpirationDate);
@@ -249,7 +264,7 @@ describe('HiveFactory', () => {
       it('Creates a proposal for the service', async () => {
         const proposal = await talentLayerService.proposals(serviceId, hiveTlId);
         expect(proposal.ownerId).to.equal(hiveTlId);
-        expect(proposal.rateToken).to.equal(proposalToken);
+        expect(proposal.rateToken).to.equal(tokenAddress);
         expect(proposal.rateAmount).to.equal(proposalAmount);
         expect(proposal.dataUri).to.equal(proposalDataUri);
         expect(proposal.expirationDate).to.equal(proposalExpirationDate);
@@ -263,7 +278,7 @@ describe('HiveFactory', () => {
   });
 
   describe('Accept proposal and release part of funds', async () => {
-    let tx: ContractTransaction;
+    let tx: ContractTransaction, hiveBalanceBefore: BigNumber;
 
     before(async () => {
       // Calculate total transaction amount
@@ -283,11 +298,22 @@ describe('HiveFactory', () => {
           .div(ethers.BigNumber.from(FEE_DIVIDER)),
       );
 
+      if (!isEth) {
+        // Send tokens to Dave
+        const balance = await simpleERC20.balanceOf(deployer.address);
+        simpleERC20.connect(deployer).transfer(dave.address, balance);
+
+        // Approve tokens to escrow
+        await simpleERC20.connect(dave).approve(talentLayerEscrow.address, totalAmount);
+
+        hiveBalanceBefore = await simpleERC20.balanceOf(hive.address);
+      }
+
       // Dave accepts the proposal
       await talentLayerEscrow
         .connect(dave)
         .createTransaction(serviceId, hiveTlId, META_EVIDENCE_CID, proposal.dataUri, {
-          value: totalAmount,
+          value: isEth ? totalAmount : 0,
         });
 
       // Dave releases funds of the transaction
@@ -295,7 +321,12 @@ describe('HiveFactory', () => {
     });
 
     it('Transfers the funds to the Hive contract', async () => {
-      await expect(tx).to.changeEtherBalances([hive], [releasedAmount]);
+      if (isEth) {
+        await expect(tx).to.changeEtherBalances([hive], [releasedAmount]);
+      } else {
+        const hiveBalanceAfter = await simpleERC20.balanceOf(hive.address);
+        expect(hiveBalanceAfter.sub(hiveBalanceBefore)).to.be.equal(releasedAmount);
+      }
     });
   });
 
@@ -312,15 +343,33 @@ describe('HiveFactory', () => {
         releasedAmount.mul(proposalShares[index]).div(FEE_DIVIDER),
       );
 
-      await expect(tx).to.changeEtherBalances([groupOwner, bob], amounts);
+      if (isEth) {
+        await expect(tx).to.changeEtherBalances([groupOwner, bob], amounts);
+      } else {
+        await expect(tx).to.changeTokenBalances(simpleERC20, [groupOwner, bob], amounts);
+      }
     });
 
     it('Keeps the honey fee in the Hive contract', async () => {
       const amount = releasedAmount.mul(honeyFee).div(FEE_DIVIDER);
-      await expect(tx).to.changeEtherBalances([hive], [releasedAmount.sub(amount).mul(-1)]);
 
-      const hiveBalance = await ethers.provider.getBalance(hive.address);
-      expect(hiveBalance).to.be.equal(amount);
+      if (isEth) {
+        await expect(tx).to.changeEtherBalances([hive], [releasedAmount.sub(amount).mul(-1)]);
+      } else {
+        await expect(tx).to.changeTokenBalances(
+          simpleERC20,
+          [hive],
+          [releasedAmount.sub(amount).mul(-1)],
+        );
+      }
+
+      if (isEth) {
+        const hiveBalance = await ethers.provider.getBalance(hive.address);
+        expect(hiveBalance).to.be.equal(amount);
+      } else {
+        const hiveBalance = await simpleERC20.balanceOf(hive.address);
+        expect(hiveBalance).to.be.equal(amount);
+      }
     });
 
     it('Updates the shared amount', async () => {
@@ -335,9 +384,13 @@ describe('HiveFactory', () => {
   });
 
   describe('Release the rest of the funds', async () => {
-    let tx: ContractTransaction;
+    let tx: ContractTransaction, hiveBalanceBefore: BigNumber;
 
     before(async () => {
+      if (!isEth) {
+        hiveBalanceBefore = await simpleERC20.balanceOf(hive.address);
+      }
+
       // Dave releases the rest of the funds of the transaction
       tx = await talentLayerEscrow
         .connect(dave)
@@ -345,7 +398,14 @@ describe('HiveFactory', () => {
     });
 
     it('Transfers the funds to the Hive contract', async () => {
-      await expect(tx).to.changeEtherBalances([hive], [proposalAmount.sub(releasedAmount)]);
+      if (isEth) {
+        await expect(tx).to.changeEtherBalances([hive], [proposalAmount.sub(releasedAmount)]);
+      } else {
+        const hiveBalanceAfter = await simpleERC20.balanceOf(hive.address);
+        expect(hiveBalanceAfter.sub(hiveBalanceBefore)).to.be.equal(
+          proposalAmount.sub(releasedAmount),
+        );
+      }
     });
   });
 
@@ -364,16 +424,34 @@ describe('HiveFactory', () => {
         amountToShare.mul(proposalShares[index]).div(FEE_DIVIDER),
       );
 
-      await expect(tx).to.changeEtherBalances([groupOwner, bob], amounts);
+      if (isEth) {
+        await expect(tx).to.changeEtherBalances([groupOwner, bob], amounts);
+      } else {
+        await expect(tx).to.changeTokenBalances(simpleERC20, [groupOwner, bob], amounts);
+      }
     });
 
     it('Keeps the honey fee in the Hive contract', async () => {
       const feeAmount = amountToShare.mul(honeyFee).div(FEE_DIVIDER);
-      await expect(tx).to.changeEtherBalances([hive], [amountToShare.sub(feeAmount).mul(-1)]);
+
+      if (isEth) {
+        await expect(tx).to.changeEtherBalances([hive], [amountToShare.sub(feeAmount).mul(-1)]);
+      } else {
+        await expect(tx).to.changeTokenBalances(
+          simpleERC20,
+          [hive],
+          [amountToShare.sub(feeAmount).mul(-1)],
+        );
+      }
 
       const amount = proposalAmount.mul(honeyFee).div(FEE_DIVIDER);
-      const hiveBalance = await ethers.provider.getBalance(hive.address);
-      expect(hiveBalance).to.be.equal(amount);
+      if (isEth) {
+        const hiveBalance = await ethers.provider.getBalance(hive.address);
+        expect(hiveBalance).to.be.equal(amount);
+      } else {
+        const hiveBalance = await simpleERC20.balanceOf(hive.address);
+        expect(hiveBalance).to.be.equal(amount);
+      }
     });
 
     it('Updates the shared amount', async () => {
@@ -381,4 +459,9 @@ describe('HiveFactory', () => {
       expect(proposalRequest.sharedAmount).to.be.equal(proposalAmount);
     });
   });
+};
+
+describe('BeeTogether', () => {
+  describe('ETH', () => tests(true));
+  describe('ERC20', () => tests(false));
 });
