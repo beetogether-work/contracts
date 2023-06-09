@@ -27,10 +27,12 @@ update-subgraph-config: update-subgraph-abis update-subgraph-addresses
 
 ifeq ($(OS),Windows_NT)
 update-subgraph-abis:
-	Get-ChildItem -Path 'artifacts\contracts\' -Recurse -Include *.json | Where-Object { $_.FullName -notmatch '\\interfaces\\' -and $_.Name -notmatch '.*\.dbg\.json' } | Copy-Item -Destination '$(SUBGRAPH_FOLDER)\abis\' -Force
+	Copy "artifacts\contracts\HiveFactory.sol\HiveFactory.json" "$(SUBGRAPH_FOLDER)\abis\HiveFactory.json"
+	Copy "artifacts\contracts\Hive.sol\Hive.json" "$(SUBGRAPH_FOLDER)\abis\Hive.json"
 else
 update-subgraph-abis:
-	find artifacts/contracts -path "artifacts/contracts/interfaces" -prune -o -name "*.json" ! -name "*.dbg.json" -exec cp {} $(SUBGRAPH_FOLDER)/abis/ \;
+	cp artifacts/contracts/HiveFactory.sol/HiveFactory.json $(SUBGRAPH_FOLDER)/abis/HiveFactory.json
+	cp artifacts/contracts/Hive.sol/Hive.json $(SUBGRAPH_FOLDER)/abis/Hive.json
 endif
 
 update-subgraph-addresses: 

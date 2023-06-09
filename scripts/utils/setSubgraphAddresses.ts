@@ -1,5 +1,5 @@
 import hre from 'hardhat';
-import { CONTRACT_NAMES, getDeployment } from '../../.deployment/deploymentManager';
+import { getDeployment } from '../../.deployment/deploymentManager';
 import { loadJSON, saveJSON } from '../../utils/files';
 
 const SUBGRAPH_FILE = `${process.env.SUBGRAPH_FOLDER}/networks.json`;
@@ -10,7 +10,7 @@ async function main() {
   const config = getDeployment(network);
   const subgraphNetwork = loadJSON(SUBGRAPH_FILE);
 
-  for (const contractName of CONTRACT_NAMES) {
+  for (const contractName of ['HiveFactory']) {
     subgraphNetwork[network][contractName].address = config[contractName];
   }
 
