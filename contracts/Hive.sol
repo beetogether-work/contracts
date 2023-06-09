@@ -75,6 +75,9 @@ contract Hive {
         owner = _owner;
 
         nextProposalRequestId.increment();
+
+        // Add owner to members
+        members[talentLayerId.ids(_owner)] = true;
     }
 
     // =========================== User functions ==============================
@@ -116,9 +119,14 @@ contract Hive {
         uint256 senderId = talentLayerId.ids(msg.sender);
         require(members[senderId], "Sender is not a member");
 
-        // TODO: check members and shares length
+        // Check members and shares length
+        require(_members.length > 0, "Members should be at least one");
+        require(_members.length == _shares.length, "Members and shares length mismatch");
 
-        // TODO: check members are valid (are members of the hive)
+        // Check members are valid (are members of the hive)
+        for (uint256 i = 0; i < _members.length; i++) {
+            require(members[_members[i]], "Member is not a member of the hive");
+        }
 
         // TODO: check shares are valid (sum is 100%)
 
