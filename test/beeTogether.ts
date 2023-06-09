@@ -7,8 +7,8 @@ import {
   TalentLayerPlatformID,
   TalentLayerService,
 } from '../typechain-types/contracts/tests/talentlayer';
-import { ETH_ADDRESS, FEE_DIVIDER, MintStatus } from '../utils/constants';
-import { BigNumber, ContractTransaction } from 'ethers';
+import { ETH_ADDRESS, MintStatus } from '../utils/constants';
+import { ContractTransaction } from 'ethers';
 import { getSignature } from '../utils/signature';
 
 describe('HiveFactory', () => {
@@ -36,7 +36,7 @@ describe('HiveFactory', () => {
   const serviceId = 1;
   const honeyFee = 1000;
   const proposalRequestId = 1;
-  const proposalId = 1;
+  // const proposalId = 1;
   const proposalToken = ETH_ADDRESS;
   const proposalAmount = 1000;
   const proposalDataUri = 'QmNSARUuUMHkFcnSzrCAhmZkmQu7ViK18sPkg48xnbAmv4';
@@ -193,6 +193,7 @@ describe('HiveFactory', () => {
 
       it('Updates the proposal request data', async () => {
         const proposalRequest = await hive.proposalRequests(proposalRequestId);
+        expect(proposalRequest.ownerId).to.equal(bobTlId);
         expect(proposalRequest.serviceId).to.equal(serviceId);
         expect(proposalRequest.rateToken).to.equal(proposalToken);
         expect(proposalRequest.rateAmount).to.equal(proposalAmount);
@@ -208,12 +209,24 @@ describe('HiveFactory', () => {
       await expect(tx).to.be.revertedWith('Sender is not a member');
     });
 
+    it('Fails if user is the owner of the proposal request', async () => {
+      const tx = hive.connect(bob).executeProposalRequest(proposalRequestId);
+      await expect(tx).to.be.revertedWith('Owner cannot execute its own proposal request');
+    });
+
     describe('Successfull execution of proposal request', async () => {
       let tx: ContractTransaction;
 
       before(async () => {
-        // Bob executes the proposal request
-        tx = await hive.connect(bob).executeProposalRequest(proposalRequestId);
+        // Carol joins the group
+        const signature = await getSignature(groupOwner, hiveAddress);
+        const handle = 'carol';
+        tx = await hive.connect(carol).join(signature, platformId, handle, {
+          value: mintFee,
+        });
+
+        // Carol executes the proposal request
+        tx = await hive.connect(carol).executeProposalRequest(proposalRequestId);
       });
 
       it('Creates a proposal for the service', async () => {

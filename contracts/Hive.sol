@@ -39,7 +39,7 @@ contract Hive {
     mapping(uint256 => ProposalRequest) public proposalRequests;
 
     struct ProposalRequest {
-        uint256 owner;
+        uint256 ownerId;
         uint256[] members;
         uint16[] shares;
         uint256 serviceId;
@@ -58,7 +58,7 @@ contract Hive {
      */
     event ProposalRequestCreated(
         uint256 indexed id,
-        uint256 owner,
+        uint256 ownerId,
         uint256[] members,
         uint16[] shares,
         uint256 serviceId,
@@ -163,7 +163,7 @@ contract Hive {
 
         uint256 id = nextProposalRequestId.current();
         proposalRequests[id] = ProposalRequest({
-            owner: talentLayerId.ids(msg.sender),
+            ownerId: talentLayerId.ids(msg.sender),
             members: _members,
             shares: _shares,
             serviceId: _serviceId,
@@ -185,7 +185,9 @@ contract Hive {
     function executeProposalRequest(uint256 _proposalRequestId) public onlyMember {
         ProposalRequest memory proposalRequest = proposalRequests[_proposalRequestId];
 
-        require(isMember(msg.sender), "Sender is not a member");
+        uint256 senderId = talentLayerId.ids(msg.sender);
+        require(senderId != proposalRequest.ownerId, "Owner cannot execute its own proposal request");
+        require(members[senderId], "Sender is not a member");
 
         // Create proposal
         talentLayerService.createProposal(
@@ -207,7 +209,7 @@ contract Hive {
 
         emit ProposalRequestCreated(
             _proposalRequestId,
-            proposalRequest.owner,
+            proposalRequest.ownerId,
             proposalRequest.members,
             proposalRequest.shares,
             proposalRequest.serviceId,
