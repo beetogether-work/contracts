@@ -46,13 +46,14 @@ describe('HiveFactory', () => {
 
   const proposalRequestId = 1;
   const proposalToken = ETH_ADDRESS;
-  const proposalAmount = BigNumber.from(1000);
+  const proposalAmount = ethers.utils.parseEther('100');
   const proposalDataUri = 'QmNSARUuUMHkFcnSzrCAhmZkmQu7ViK18sPkg48xnbAmv4';
   const now = Math.floor(Date.now() / 1000);
   const proposalExpirationDate = now + 60 * 60 * 24 * 15;
   const proposalMembers = [groupOwnerTlId, bobTlId];
   const proposalShares = [4000, 5000];
   const honeyFee = 1000;
+  const releasedAmount = ethers.utils.parseEther('60');
 
   before(async () => {
     [deployer, platformOwner, groupOwner, bob, carol, dave] = await ethers.getSigners();
@@ -261,7 +262,7 @@ describe('HiveFactory', () => {
     });
   });
 
-  describe('Accept proposal and release funds', async () => {
+  describe('Accept proposal and release part of funds', async () => {
     let tx: ContractTransaction;
 
     before(async () => {
@@ -290,11 +291,11 @@ describe('HiveFactory', () => {
         });
 
       // Dave releases funds of the transaction
-      tx = await talentLayerEscrow.connect(dave).release(daveTlId, transactionId, proposalAmount);
+      tx = await talentLayerEscrow.connect(dave).release(daveTlId, transactionId, releasedAmount);
     });
 
     it('Transfers the funds to the Hive contract', async () => {
-      await expect(tx).to.changeEtherBalances([hive], [proposalAmount]);
+      await expect(tx).to.changeEtherBalances([hive], [releasedAmount]);
     });
   });
 
@@ -307,19 +308,77 @@ describe('HiveFactory', () => {
     });
 
     it('Shares the funds to proposal members based on the share', async () => {
-      const amounts = proposalMembers.map((member, index) =>
-        proposalAmount.mul(proposalShares[index]).div(FEE_DIVIDER),
+      const amounts = proposalMembers.map((_, index) =>
+        releasedAmount.mul(proposalShares[index]).div(FEE_DIVIDER),
       );
 
       await expect(tx).to.changeEtherBalances([groupOwner, bob], amounts);
     });
 
     it('Keeps the honey fee in the Hive contract', async () => {
-      const amount = proposalAmount.mul(honeyFee).div(FEE_DIVIDER);
-      await expect(tx).to.changeEtherBalances([hive], [proposalAmount.sub(amount).mul(-1)]);
+      const amount = releasedAmount.mul(honeyFee).div(FEE_DIVIDER);
+      await expect(tx).to.changeEtherBalances([hive], [releasedAmount.sub(amount).mul(-1)]);
 
       const hiveBalance = await ethers.provider.getBalance(hive.address);
       expect(hiveBalance).to.be.equal(amount);
+    });
+
+    it('Updates the shared amount', async () => {
+      const proposalRequest = await hive.proposalRequests(proposalRequestId);
+      expect(proposalRequest.sharedAmount).to.be.equal(releasedAmount);
+    });
+
+    it('Fails if there are no funds to share', async () => {
+      const tx = hive.connect(bob).shareFunds(proposalRequestId);
+      await expect(tx).to.be.revertedWith('No funds to share');
+    });
+  });
+
+  describe('Release the rest of the funds', async () => {
+    let tx: ContractTransaction;
+
+    before(async () => {
+      // Dave releases the rest of the funds of the transaction
+      tx = await talentLayerEscrow
+        .connect(dave)
+        .release(daveTlId, transactionId, proposalAmount.sub(releasedAmount));
+    });
+
+    it('Transfers the funds to the Hive contract', async () => {
+      await expect(tx).to.changeEtherBalances([hive], [proposalAmount.sub(releasedAmount)]);
+    });
+  });
+
+  describe('Share the rest of the funds', async () => {
+    let tx: ContractTransaction;
+
+    const amountToShare = proposalAmount.sub(releasedAmount);
+
+    before(async () => {
+      // Share funds
+      tx = await hive.connect(groupOwner).shareFunds(proposalRequestId);
+    });
+
+    it('Shares the funds to proposal members based on the share', async () => {
+      const amounts = proposalMembers.map((_, index) =>
+        amountToShare.mul(proposalShares[index]).div(FEE_DIVIDER),
+      );
+
+      await expect(tx).to.changeEtherBalances([groupOwner, bob], amounts);
+    });
+
+    it('Keeps the honey fee in the Hive contract', async () => {
+      const feeAmount = amountToShare.mul(honeyFee).div(FEE_DIVIDER);
+      await expect(tx).to.changeEtherBalances([hive], [amountToShare.sub(feeAmount).mul(-1)]);
+
+      const amount = proposalAmount.mul(honeyFee).div(FEE_DIVIDER);
+      const hiveBalance = await ethers.provider.getBalance(hive.address);
+      expect(hiveBalance).to.be.equal(amount);
+    });
+
+    it('Updates the shared amount', async () => {
+      const proposalRequest = await hive.proposalRequests(proposalRequestId);
+      expect(proposalRequest.sharedAmount).to.be.equal(proposalAmount);
     });
   });
 });

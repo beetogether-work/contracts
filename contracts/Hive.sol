@@ -272,6 +272,7 @@ contract Hive {
             service.transactionId
         );
         uint256 amountToShare = transaction.releasedAmount - proposalRequest.sharedAmount;
+        require(amountToShare > 0, "No funds to share");
 
         // Share funds between all the members of the proposal request, based on the shares
         for (uint256 i = 0; i < proposalRequest.members.length; i++) {
