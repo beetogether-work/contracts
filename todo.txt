@@ -1,0 +1,135 @@
+BUG escrow/disputes:
+- if happens that arbitration cost is lower than both fees paid by sender and receiver,
+  then noone can proceed to raise dispute.
+  scenario when this can happen:
+  - sender pays arbitration fee
+  - arbitration cost increases
+  - receiver pays arbitration fee (updated amount)
+  - arbitration fee decreases and it's now less than what sender initially paid
+  => both parties paid more than the fee but no dispute was raised
+
+  Now parties can't do anything, because of this check in payArbitrationFeeBySender and payArbitrationFeeByReceiver
+  
+  `require(transaction.senderFee == arbitrationCost, "The sender fee must be equal to the arbitration cost");`
+
+  this check wants the amount paid to be strictly equal, but if it's lower it can never happen
+  this can be solved by having a check with >= instead of ==. This would mean that parties can end up overpaying
+  more easily, but either way they are always reimbursed if overpaid
+
+
+
+______
+
+
+epochBeginning
+EPOCH_DURATION = 1 day
+
+constructor:
+  epochBeginning = block.timestamp (OR make it so that corresponds with the beginning of the day?)
+
+
+getCurrentEpoch()
+  (block.timestamp - epochBeginning) / EPOCH_DURATION
+
+getReleasableEpoch(transactionId)
+   getEpoch(transaction.releasableAt) + 1
+
+createTransaction()
+  transaction.releasableAt = block.timestamp + disputePeriod
+  releasableEpoch = (transaction.releasableAt - epochBeginning) / EPOCH_DURATION + 1
+
+  releasableBalanceByEpoch[releasableEpoch] += transaction.amount
+
+
+releaseAll()
+  currentEpoch = getCurrentEpoch()
+  amount = 0;
+
+  for (let i = lastReleasedEpoch + 1; i <= currentEpoch; i++) {
+    amount += releasableBalanceByEpoch[i]
+    releasableBalanceByEpoch[i] = 0
+  }
+
+  release(amount)
+  lastReleasedEpoch = currentEpoch
+  
+
+disputeRequested()    <<<<<<<<<<
+  releasableBalanceByEpoch[releasableEpoch] -= transaction.amount
+  platformClaimableBalanceByEpoch[protocol][releasableEpoch] -= protocolFeeAmount
+  platformClaimableBalanceByEpoch[originPlatform][releasableEpoch] -= originFeeAmount
+  platformClaimableBalanceByEpoch[buyPlatform][releasableEpoch] -= buyFeeAmount
+
+
+release(transactionId) (single release)
+  releasableEpoch = getEpoch(transaction.releasableAt) + 1
+
+  require(releasableBalanceByEpoch[releasableEpoch] >= transaction.amount)
+  releasableBalanceByEpoch[releasableEpoch] -= transaction.amount
+
+payArbitrationFeeBySender()
+  require(block.timestamp < transaction.releasableAt)
+
+
+set releasable balance to 0 after batch claim? If yes, need to add tests
+
+
+
+PROBLEMS:
+- how to track on the graph which transactions were released?
+  - would need an event for each transaction, or a BatchPayment event with an array of ids 
+    but this would mean needing to track all the transaction ids releasable at each epoch. expensive
+  - just do it at the graph level. when the BatchPayment method is triggered look for all non disputed
+    transactions and update them 
+
+- what if course token can be updated and multiple transactions for the same course are in different tokens?
+  this would break the releaseAll system, because we can't do a single big relesae if multiple tokens are involved
+  we could instead track releasable amount by course id and token.
+
+  => for now make it so that course token can't be updated. then think about it. probably good to have it updatable
+
+- how to distribute fees:
+  originFee, buyFee, protocolFee could be updated so multiple transactions can have different values for this.
+  also every transaction (even for same course) can happen in different platforms, so different fees.
+  how to know how to update fee balances when doing releaseAll
+  
+  probably need to keep track of all of these params per epoch as well.
+  maybe instead of releasableBalanceByEpoch being just an uint256 can be a struct
+  struct ReleasableBalance {
+    uint256 amount
+    uint16 originFee (amount or percentage??)
+  }
+
+  >> This actually doesn't work because even though we know what is the balance for each fee, we don't know what
+     platform to release the fees to. We can know it for originPlatform is balances are separated by course
+     (but probably it won't be), but there is no way to know for buyPlatform since multiple transactions for the same course
+     could be giving fees to different platforms.
+
+
+- should allow anyone to releaseAll/release? otherwise if only seller can do it he may take a lot to do it and
+  platforms wouldn't get fees, even though the transactions might not be disputable anymore.
+
+
+
+- keep individual release? Maybe causes more problems than utility
+- should update balances mapping after claim/release? does it have any utility? Since the last epoch is updated
+  those values in the mapping before lastEpoch won't be used at all
+
+
+- TESTS:
+  - TODOs
+  - test course price change before release
+  - decide if move platform balances logic to epoch instead of escrow test file
+
+
+
+______
+
+
+- rename alice/bob to receiver/seller in escrow tests?
+- think if releaseAll needs to be separate for every course. Since now we handle the case
+  where a course dispute period can change, there should be no problem in having a single releaseAll
+  instead of one per course.
+
+- should use _transferBalance for claim? Makes a lot of sense when splitting amount cause otherwise one party
+  wouldn't get it. But what if it fails for claiming fees? Probably can't happen it contract works correctly?
