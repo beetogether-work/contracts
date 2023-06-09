@@ -24,7 +24,7 @@ contract HiveFactory {
 
     // =========================== Events ==============================
 
-    event HiveCreated(address hiveAddress);
+    event HiveCreated(uint256 id, address hiveAddress, uint256 ownerId, uint16 honeyFee);
 
     // =========================== Constructor ==============================
 
@@ -73,7 +73,7 @@ contract HiveFactory {
         // Mint TalentLayer ID to Hive
         uint256 hiveId = _mintTlId(address(hive), _platformId, _groupHandle, msg.value / 2);
 
-        emit HiveCreated(address(hive));
+        emit HiveCreated(hiveId, address(hive), ownerId, _honeyFee);
 
         return hiveId;
     }
