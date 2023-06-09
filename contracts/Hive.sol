@@ -54,6 +54,11 @@ contract Hive {
     // =========================== Events ==============================
 
     /**
+     * @dev Emitted when a new user joins the hive.
+     */
+    event MemberJoined(uint256 groupId, uint256 userId);
+
+    /**
      * @dev Emitted when a new proposal request is created
      */
     event ProposalRequestCreated(
@@ -110,6 +115,13 @@ contract Hive {
         return members[talentLayerId.ids(_address)];
     }
 
+    /**
+     * @notice Returns the TalentLayer ID of the hive.
+     */
+    function groupId() public view returns (uint256) {
+        return talentLayerId.ids(address(this));
+    }
+
     // =========================== User functions ==============================
 
     /**
@@ -129,6 +141,8 @@ contract Hive {
 
         // Add to members
         members[userId] = true;
+
+        emit MemberJoined(groupId(), userId);
     }
 
     /**
@@ -191,7 +205,7 @@ contract Hive {
 
         // Create proposal
         talentLayerService.createProposal(
-            talentLayerId.ids(address(this)),
+            groupId(),
             proposalRequest.serviceId,
             proposalRequest.rateToken,
             proposalRequest.rateAmount,
