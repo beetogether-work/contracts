@@ -75,6 +75,11 @@ contract Hive {
         // bytes signature
     );
 
+    /**
+     * @dev Emitted when a new proposal request is executed
+     */
+    event ProposalRequestExecuted(uint256 indexed id, uint256 executor);
+
     // =========================== Modifiers ==============================
 
     /**
@@ -214,6 +219,8 @@ contract Hive {
             proposalRequest.expirationDate,
             ""
         );
+
+        emit ProposalRequestExecuted(_proposalRequestId, senderId);
     }
 
     // =========================== Internal functions ==============================
