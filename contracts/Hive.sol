@@ -34,13 +34,16 @@ contract Hive {
     // Fee percentage (per 10,000) that goes to the Hive treasury per each transaction
     uint16 public honeyFee;
 
+    // Owner of the group
     address public owner;
 
+    // Members of the group (by TalentLayer ID)
     mapping(uint256 => bool) public members;
 
     // Proposal request id counter
     Counters.Counter nextProposalRequestId;
 
+    // Proposal requests
     mapping(uint256 => ProposalRequest) public proposalRequests;
 
     enum ProposalRequestStatus {
