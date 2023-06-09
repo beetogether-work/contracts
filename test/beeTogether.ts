@@ -76,15 +76,23 @@ describe('HiveFactory', () => {
   describe('Join Group', async () => {
     let tx: ContractTransaction;
 
+    const handle = 'bob__';
+
     before(async () => {
       const signature = await getSignature(groupOwner, hiveAddress);
 
       // Bob joins the group
-      tx = await hive.connect(bob).join(signature);
+      tx = await hive.connect(bob).join(signature, platformId, handle);
     });
 
-    it('', async () => {
-      await expect(tx).to.not.be.reverted;
+    it('Mints a TalentLayer ID to the user', async () => {
+      await expect(tx).to.changeTokenBalance(talentLayerID, bob, 1);
+
+      const bobId = await talentLayerID.ids(bob.address);
+      const profile = await talentLayerID.connect(groupOwner).profiles(bobId);
+
+      expect(profile.platformId).to.equal(platformId);
+      expect(profile.handle).to.equal(handle);
     });
   });
 });

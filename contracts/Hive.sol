@@ -33,8 +33,20 @@ contract Hive {
 
     // =========================== User functions ==============================
 
-    function join(bytes calldata _ownerSignature) public payable {
+    /**
+     * @notice Joins the hive. Mints a TalentLayer ID to the sender if doesn't have one yet.
+     * @param _ownerSignature signature of the hive owner to allow the operation
+     * @param _platformId The id of the TalentLayer platform for minting the TalentLayer ID.
+     * @param _handle The handle of the user for minting its TalentLayer ID. Should be empty if already has a TalentLayer ID.
+     */
+    function join(bytes calldata _ownerSignature, uint256 _platformId, string memory _handle) public payable {
         _validateOwnerSignature(_ownerSignature);
+
+        // Mint TalentLayer ID to sender if doesn't have it
+        uint256 ownerId = talentLayerId.ids(msg.sender);
+        if (ownerId == 0) {
+            ownerId = talentLayerId.mintForAddress(msg.sender, _platformId, _handle);
+        }
     }
 
     // =========================== Private functions ==============================
