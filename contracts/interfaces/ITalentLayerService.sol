@@ -56,11 +56,14 @@ interface ITalentLayerService {
     ) external returns (uint256);
 
     function createProposal(
+        uint256 _profileId,
         uint256 _serviceId,
         address _rateToken,
         uint256 _rateAmount,
         uint256 _platformId,
-        string calldata _dataUri
+        string calldata _dataUri,
+        uint256 _expirationDate,
+        bytes calldata _signature
     ) external;
 
     function afterDeposit(uint256 _serviceId, uint256 _proposalId, uint256 _transactionId) external;

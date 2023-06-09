@@ -39,6 +39,7 @@ contract Hive {
     mapping(uint256 => ProposalRequest) public proposalRequests;
 
     struct ProposalRequest {
+        uint256 owner;
         uint256[] members;
         uint16[] shares;
         uint256 serviceId;
@@ -57,6 +58,7 @@ contract Hive {
      */
     event ProposalRequestCreated(
         uint256 indexed id,
+        uint256 owner,
         uint256[] members,
         uint16[] shares,
         uint256 serviceId,
@@ -67,6 +69,17 @@ contract Hive {
         uint256 expirationDate
         // bytes signature
     );
+
+    // =========================== Modifiers ==============================
+
+    /**
+     * @dev Checks that the sender is member of the group.
+     */
+    modifier onlyMember() {
+        // Check if sender is a member
+        require(isMember(msg.sender), "Sender is not a member");
+        _;
+    }
 
     // =========================== Constructor ==============================
 
@@ -86,6 +99,15 @@ contract Hive {
 
         // Add owner to members
         members[talentLayerId.ids(_owner)] = true;
+    }
+
+    // =========================== View functions ==============================
+
+    /**
+     * @notice Checks if a given address is member of the hive.
+     */
+    function isMember(address _address) public view returns (bool) {
+        return members[talentLayerId.ids(_address)];
     }
 
     // =========================== User functions ==============================
@@ -122,11 +144,7 @@ contract Hive {
         // bytes calldata _signature,
         uint256[] calldata _members,
         uint16[] calldata _shares
-    ) public {
-        // Check if sender is a member
-        uint256 senderId = talentLayerId.ids(msg.sender);
-        require(members[senderId], "Sender is not a member");
-
+    ) public onlyMember {
         // Check members and shares length
         require(_members.length > 0, "Members should be at least one");
         require(_members.length == _shares.length, "Members and shares length mismatch");
@@ -145,6 +163,7 @@ contract Hive {
 
         uint256 id = nextProposalRequestId.current();
         proposalRequests[id] = ProposalRequest({
+            owner: talentLayerId.ids(msg.sender),
             members: _members,
             shares: _shares,
             serviceId: _serviceId,
@@ -160,6 +179,27 @@ contract Hive {
         _afterCreateProposalRequest(id);
     }
 
+    /**
+     * @notice Executes a proposal request (creates the proposal on TalentLayerService)
+     */
+    function executeProposalRequest(uint256 _proposalRequestId) public onlyMember {
+        ProposalRequest memory proposalRequest = proposalRequests[_proposalRequestId];
+
+        require(isMember(msg.sender), "Sender is not a member");
+
+        // Create proposal
+        talentLayerService.createProposal(
+            talentLayerId.ids(address(this)),
+            proposalRequest.serviceId,
+            proposalRequest.rateToken,
+            proposalRequest.rateAmount,
+            proposalRequest.platformId,
+            proposalRequest.dataUri,
+            proposalRequest.expirationDate,
+            ""
+        );
+    }
+
     // =========================== Internal functions ==============================
 
     function _afterCreateProposalRequest(uint256 _proposalRequestId) internal {
@@ -167,6 +207,7 @@ contract Hive {
 
         emit ProposalRequestCreated(
             _proposalRequestId,
+            proposalRequest.owner,
             proposalRequest.members,
             proposalRequest.shares,
             proposalRequest.serviceId,

@@ -4,9 +4,12 @@ import { Network, NetworkConfig, getConfig } from '../networkConfig';
 import {
   TalentLayerID,
   TalentLayerPlatformID,
+  TalentLayerService,
 } from '../typechain-types/contracts/tests/talentlayer';
 
-export async function deploy(): Promise<[HiveFactory, TalentLayerID, TalentLayerPlatformID]> {
+export async function deploy(): Promise<
+  [HiveFactory, TalentLayerID, TalentLayerPlatformID, TalentLayerService]
+> {
   // const network = hre.network.name;
   const chainId = network.config.chainId ? network.config.chainId : Network.LOCAL;
 
@@ -66,5 +69,6 @@ export async function deploy(): Promise<[HiveFactory, TalentLayerID, TalentLayer
     hiveFactory,
     talentLayerID as TalentLayerID,
     talentLayerPlatformID as TalentLayerPlatformID,
+    talentLayerService as TalentLayerService,
   ];
 }
