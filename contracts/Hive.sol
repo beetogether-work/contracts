@@ -18,7 +18,7 @@ contract Hive {
     /**
      * @param talentLayerIdAddress The address of the TalentLayerID contract.
      */
-    constructor(address talentLayerIdAddress, string memory dataUri, address owner) {
+    constructor(address talentLayerIdAddress, address owner, string memory dataUri) {
         talentLayerId = ITalentLayerID(talentLayerIdAddress);
     }
 }
