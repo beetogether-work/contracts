@@ -17,6 +17,9 @@ import "hardhat/console.sol";
 contract Hive {
     using Counters for Counters.Counter;
 
+    // Divider used for fees
+    uint16 private constant FEE_DIVIDER = 10000;
+
     // The TalentLayerID contract.
     ITalentLayerID talentLayerId;
 
@@ -133,7 +136,7 @@ contract Hive {
         for (uint256 i = 0; i < _shares.length; i++) {
             totalShares += _shares[i];
         }
-        require(totalShares == 100, "Shares sum is not 100%");
+        require(totalShares == FEE_DIVIDER, "Shares sum is not 100%");
 
         uint256 id = nextProposalRequestId.current();
         proposalRequests[id] = ProposalRequest({

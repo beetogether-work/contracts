@@ -4,7 +4,7 @@ import { Hive, HiveFactory, TalentLayerID } from '../typechain-types';
 import { deploy } from '../utils/deploy';
 import { expect } from 'chai';
 import { TalentLayerPlatformID } from '../typechain-types/contracts/tests/talentlayer';
-import { ETH_ADDRESS, MintStatus } from '../utils/constants';
+import { ETH_ADDRESS, FEE_DIVIDER, MintStatus } from '../utils/constants';
 import { ContractTransaction } from 'ethers';
 import { getSignature } from '../utils/signature';
 
@@ -140,13 +140,15 @@ describe('HiveFactory', () => {
     ];
 
     it('Fails if user is not member of the group', async () => {
-      const tx = hive.connect(dave).createProposalRequest(...proposalParams, [bobTlId], [100]);
+      const tx = hive
+        .connect(dave)
+        .createProposalRequest(...proposalParams, [bobTlId], [FEE_DIVIDER]);
 
       await expect(tx).to.be.revertedWith('Sender is not a member');
     });
 
     it('Fails if the sum of the shares is not 100', async () => {
-      const tx = hive.connect(bob).createProposalRequest(...proposalParams, [bobTlId], [50]);
+      const tx = hive.connect(bob).createProposalRequest(...proposalParams, [bobTlId], [5000]);
 
       await expect(tx).to.be.revertedWith('Shares sum is not 100%');
     });
@@ -154,7 +156,7 @@ describe('HiveFactory', () => {
     describe('Successfull creation of proposal request', async () => {
       before(async () => {
         // Bob creates a proposal request
-        await hive.connect(bob).createProposalRequest(...proposalParams, [bobTlId], [100]);
+        await hive.connect(bob).createProposalRequest(...proposalParams, [bobTlId], [FEE_DIVIDER]);
       });
 
       it('Updates the proposal request data', async () => {
