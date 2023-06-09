@@ -26,6 +26,7 @@ async function main() {
 
   // Disable whitelist for reserved handles
   await talentLayerID.connect(deployer).updateMintStatus(MintStatus.PUBLIC);
+  // await talentLayerID.connect(deployer).updateMintFee(100);
 
   // Create PlatformId
   await talentLayerPlatformID.connect(deployer).whitelistUser(platformOwner.address);

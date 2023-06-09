@@ -4,6 +4,8 @@ pragma solidity ^0.8.9;
 import {Hive} from "./Hive.sol";
 import {ITalentLayerID} from "./interfaces/ITalentLayerID.sol";
 
+import "hardhat/console.sol";
+
 /**
  * @title HiveFactory
  * @dev This contract is used to create new Hive (group) contracts.
@@ -37,15 +39,27 @@ contract HiveFactory {
         // Mint TalentLayer ID to sender if doesn't have it
         uint256 ownerId = talentLayerId.ids(msg.sender);
         if (ownerId == 0) {
-            ownerId = talentLayerId.mintForAddress(msg.sender, _platformId, _ownerHandle);
+            _mintTlId(msg.sender, _platformId, _ownerHandle, msg.value / 2);
         }
 
         // Deploy new Hive contract
         Hive hive = new Hive(address(talentLayerId), msg.sender);
 
         // Mint TalentLayer ID to Hive
-        talentLayerId.mintForAddress(address(hive), _platformId, _groupHandle);
+        _mintTlId(address(hive), _platformId, _groupHandle, msg.value / 2);
 
         emit HiveCreated(address(hive));
+    }
+
+    // =========================== Private functions ==============================
+
+    /**
+     * @notice Mint a TalentLayer ID to a given address.
+     */
+    function _mintTlId(address _address, uint256 _platformId, string memory _handle, uint256 _price) public payable {
+        (bool success, ) = address(talentLayerId).call{value: _price}(
+            abi.encodeWithSignature("mintForAddress(address,uint256,string)", _address, _platformId, _handle)
+        );
+        require(success, "Minting failed");
     }
 }

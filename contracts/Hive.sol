@@ -45,9 +45,13 @@ contract Hive {
         // Mint TalentLayer ID to sender if doesn't have it
         uint256 ownerId = talentLayerId.ids(msg.sender);
         if (ownerId == 0) {
-            ownerId = talentLayerId.mintForAddress(msg.sender, _platformId, _handle);
+            _mintTlId(msg.sender, _platformId, _handle);
         }
     }
+
+    // function createProposalRequest() public {} {
+
+    // }
 
     // =========================== Private functions ==============================
 
@@ -61,5 +65,15 @@ contract Hive {
 
         address signer = ECDSA.recover(ethMessageHash, _signature);
         require(owner == signer, "Invalid signature");
+    }
+
+    /**
+     * @notice Mint a TalentLayer ID to a given address.
+     */
+    function _mintTlId(address _address, uint256 _platformId, string memory _handle) public payable {
+        (bool success, ) = address(talentLayerId).call{value: msg.value}(
+            abi.encodeWithSignature("mintForAddress(address,uint256,string)", _address, _platformId, _handle)
+        );
+        require(success, "Minting failed");
     }
 }

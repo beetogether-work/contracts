@@ -20,6 +20,7 @@ describe('HiveFactory', () => {
     hive: Hive;
 
   const platformId = 1;
+  const mintFee = 100;
 
   before(async () => {
     [deployer, platformOwner, groupOwner, bob] = await ethers.getSigners();
@@ -27,6 +28,7 @@ describe('HiveFactory', () => {
 
     // Disable whitelist for reserved handles
     await talentLayerID.connect(deployer).updateMintStatus(MintStatus.PUBLIC);
+    await talentLayerID.connect(deployer).updateMintFee(mintFee);
 
     // Create PlatformId
     await talentLayerPlatformID.connect(deployer).whitelistUser(platformOwner.address);
@@ -40,7 +42,9 @@ describe('HiveFactory', () => {
     const ownerHandle = 'alice';
 
     before(async () => {
-      tx = await hiveFactory.connect(groupOwner).createHive(platformId, groupHandle, ownerHandle);
+      tx = await hiveFactory.connect(groupOwner).createHive(platformId, groupHandle, ownerHandle, {
+        value: mintFee * 2,
+      });
       const receipt = await tx.wait();
 
       hiveAddress = receipt.events?.find((e) => e.event === 'HiveCreated')?.args?.hiveAddress;
@@ -82,7 +86,9 @@ describe('HiveFactory', () => {
       const signature = await getSignature(groupOwner, hiveAddress);
 
       // Bob joins the group
-      tx = await hive.connect(bob).join(signature, platformId, handle);
+      tx = await hive.connect(bob).join(signature, platformId, handle, {
+        value: mintFee,
+      });
     });
 
     it('Mints a TalentLayer ID to the user', async () => {
