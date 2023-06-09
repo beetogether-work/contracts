@@ -1,6 +1,7 @@
 import { HardhatUserConfig } from 'hardhat/config';
 import 'hardhat-contract-sizer';
 import '@nomicfoundation/hardhat-toolbox';
+import '@openzeppelin/hardhat-upgrades';
 
 import './scripts/tasks/deploy';
 

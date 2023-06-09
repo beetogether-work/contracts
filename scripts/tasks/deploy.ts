@@ -1,4 +1,4 @@
-import { setDeploymentAddress } from '../../.deployment/deploymentManager';
+import { getDeploymentAddress, setDeploymentAddress } from '../../.deployment/deploymentManager';
 import { verifyAddress } from '../../utils/verifyAddress';
 import { task } from 'hardhat/config';
 
@@ -14,9 +14,14 @@ task('deploy', 'Deploy all contracts')
     const balance = await ethers.provider.getBalance(deployer.address);
     console.log('Balance: ', ethers.utils.formatEther(balance));
 
+    const talentLayerID = await ethers.getContractAt(
+      'ITalentLayerID',
+      getDeploymentAddress(network.name, 'TalentLayerID'),
+    );
+
     // Deploy HiveFactory
     const HiveFactory = await ethers.getContractFactory('HiveFactory');
-    const hiveFactory = await HiveFactory.deploy();
+    const hiveFactory = await HiveFactory.deploy(talentLayerID.address);
     await hiveFactory.deployed();
 
     if (verify) {
