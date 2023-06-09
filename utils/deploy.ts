@@ -59,7 +59,7 @@ export async function deploy(): Promise<[HiveFactory, TalentLayerID, TalentLayer
 
   // Deploy HiveFactory
   const HiveFactory = await ethers.getContractFactory('HiveFactory');
-  const hiveFactory = await HiveFactory.deploy(talentLayerID.address);
+  const hiveFactory = await HiveFactory.deploy(talentLayerID.address, talentLayerService.address);
   await hiveFactory.deployed();
 
   return [
