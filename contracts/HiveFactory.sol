@@ -41,11 +41,13 @@ contract HiveFactory {
      *                    and sender TalentLayer ID if required.
      * @param _groupHandle The handle of the group.
      * @param _ownerHandle The handle of the Hive owner. Should be empty if owner already has a TalentLayer ID.
+     * @param _honeyFee The fee percentage (per 10,000) for the Hive treasury.
      */
     function createHive(
         uint256 _platformId,
         string memory _groupHandle,
-        string memory _ownerHandle
+        string memory _ownerHandle,
+        uint16 _honeyFee
     ) public payable returns (uint256) {
         // Mint TalentLayer ID to sender if doesn't have it
         uint256 ownerId = talentLayerId.ids(msg.sender);
@@ -54,7 +56,7 @@ contract HiveFactory {
         }
 
         // Deploy new Hive contract
-        Hive hive = new Hive(msg.sender, address(talentLayerId), address(talentLayerService));
+        Hive hive = new Hive(msg.sender, _honeyFee, address(talentLayerId), address(talentLayerService));
 
         // Mint TalentLayer ID to Hive
         uint256 hiveId = _mintTlId(address(hive), _platformId, _groupHandle, msg.value / 2);

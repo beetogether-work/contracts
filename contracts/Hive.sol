@@ -26,6 +26,9 @@ contract Hive {
     // The TalentLayerService contract.
     ITalentLayerService talentLayerService;
 
+    // Fee percentage (per 10,000) that goes to the Hive treasury per each transaction
+    uint16 public honeyFee;
+
     address public owner;
 
     mapping(uint256 => bool) public members;
@@ -68,14 +71,16 @@ contract Hive {
     // =========================== Constructor ==============================
 
     /**
+     * @param _owner The address of the Hive owner.
+     * @param _honeyFee The fee percentage (per 10,000) for the Hive treasury.
      * @param _talentLayerIdAddress The address of the TalentLayerID contract.
      * @param _talentLayerServiceAddress The address of the TalentLayerService contract.
-     * @param _owner The address of the Hive owner.
      */
-    constructor(address _owner, address _talentLayerIdAddress, address _talentLayerServiceAddress) {
+    constructor(address _owner, uint16 _honeyFee, address _talentLayerIdAddress, address _talentLayerServiceAddress) {
         talentLayerId = ITalentLayerID(_talentLayerIdAddress);
         talentLayerService = ITalentLayerService(_talentLayerServiceAddress);
         owner = _owner;
+        honeyFee = _honeyFee;
 
         nextProposalRequestId.increment();
 
@@ -131,8 +136,8 @@ contract Hive {
             require(members[_members[i]], "Member is not a member of the hive");
         }
 
-        // Check shares are valid (sum is 100%)
-        uint256 totalShares = 0;
+        // Check shares are valid (sum, including honey fee, is 100%)
+        uint256 totalShares = honeyFee;
         for (uint256 i = 0; i < _shares.length; i++) {
             totalShares += _shares[i];
         }

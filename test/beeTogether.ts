@@ -5,7 +5,7 @@ import { deploy } from '../utils/deploy';
 import { expect } from 'chai';
 import { TalentLayerPlatformID } from '../typechain-types/contracts/tests/talentlayer';
 import { ETH_ADDRESS, FEE_DIVIDER, MintStatus } from '../utils/constants';
-import { ContractTransaction } from 'ethers';
+import { BigNumber, ContractTransaction } from 'ethers';
 import { getSignature } from '../utils/signature';
 
 describe('HiveFactory', () => {
@@ -23,11 +23,13 @@ describe('HiveFactory', () => {
 
   const platformId = 1;
   const mintFee = 100;
+  const honeyFee = 1000;
 
-  const groupOwnerTlId = 1;
-  // const hiveTlId = 2;
-  const bobTlId = 3;
-  // const carolTlId = 4;
+  const daveTlId = 1;
+  const groupOwnerTlId = 2;
+  // const hiveTlId = 3;
+  const bobTlId = 4;
+  // const carolTlId = 5;
 
   before(async () => {
     [deployer, platformOwner, groupOwner, bob, carol, dave] = await ethers.getSigners();
@@ -36,6 +38,10 @@ describe('HiveFactory', () => {
     // Disable whitelist for reserved handles
     await talentLayerID.connect(deployer).updateMintStatus(MintStatus.PUBLIC);
     await talentLayerID.connect(deployer).updateMintFee(mintFee);
+
+    await talentLayerID.connect(dave).mint(0, 'dave_', {
+      value: mintFee,
+    });
 
     // Create PlatformId
     await talentLayerPlatformID.connect(deployer).whitelistUser(platformOwner.address);
@@ -51,7 +57,7 @@ describe('HiveFactory', () => {
     before(async () => {
       tx = await hiveFactory
         .connect(groupOwner)
-        .createHive(platformId, groupHandle, groupOwnerHandle, {
+        .createHive(platformId, groupHandle, groupOwnerHandle, honeyFee, {
           value: mintFee * 2,
         });
       const receipt = await tx.wait();
@@ -139,24 +145,28 @@ describe('HiveFactory', () => {
       proposalExpirationDate,
     ];
 
-    it('Fails if user is not member of the group', async () => {
-      const tx = hive
-        .connect(dave)
-        .createProposalRequest(...proposalParams, [bobTlId], [FEE_DIVIDER]);
+    const members = [groupOwnerTlId, bobTlId];
+    const shares = [4500, 4500];
 
+    it('Fails if user is not member of the group', async () => {
+      const tx = hive.connect(dave).createProposalRequest(...proposalParams, members, shares);
+      await expect(tx).to.be.revertedWith('Sender is not a member');
+    });
+
+    it('Fails if proposal members are not part of the group', async () => {
+      const tx = hive.connect(dave).createProposalRequest(...proposalParams, [daveTlId], shares);
       await expect(tx).to.be.revertedWith('Sender is not a member');
     });
 
     it('Fails if the sum of the shares is not 100', async () => {
-      const tx = hive.connect(bob).createProposalRequest(...proposalParams, [bobTlId], [5000]);
-
+      const tx = hive.connect(bob).createProposalRequest(...proposalParams, members, [5000, 5000]);
       await expect(tx).to.be.revertedWith('Shares sum is not 100%');
     });
 
     describe('Successfull creation of proposal request', async () => {
       before(async () => {
         // Bob creates a proposal request
-        await hive.connect(bob).createProposalRequest(...proposalParams, [bobTlId], [FEE_DIVIDER]);
+        await hive.connect(bob).createProposalRequest(...proposalParams, members, shares);
       });
 
       it('Updates the proposal request data', async () => {
