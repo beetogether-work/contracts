@@ -2,13 +2,14 @@ import { ethers, network, upgrades } from 'hardhat';
 import type { HiveFactory } from '../typechain-types/contracts';
 import { Network, NetworkConfig, getConfig } from '../networkConfig';
 import {
+  TalentLayerEscrow,
   TalentLayerID,
   TalentLayerPlatformID,
   TalentLayerService,
 } from '../typechain-types/contracts/tests/talentlayer';
 
 export async function deploy(): Promise<
-  [HiveFactory, TalentLayerID, TalentLayerPlatformID, TalentLayerService]
+  [HiveFactory, TalentLayerID, TalentLayerPlatformID, TalentLayerService, TalentLayerEscrow]
 > {
   // const network = hre.network.name;
   const chainId = network.config.chainId ? network.config.chainId : Network.LOCAL;
@@ -62,7 +63,11 @@ export async function deploy(): Promise<
 
   // Deploy HiveFactory
   const HiveFactory = await ethers.getContractFactory('HiveFactory');
-  const hiveFactory = await HiveFactory.deploy(talentLayerID.address, talentLayerService.address);
+  const hiveFactory = await HiveFactory.deploy(
+    talentLayerID.address,
+    talentLayerService.address,
+    talentLayerEscrow.address,
+  );
   await hiveFactory.deployed();
 
   return [
@@ -70,5 +75,6 @@ export async function deploy(): Promise<
     talentLayerID as TalentLayerID,
     talentLayerPlatformID as TalentLayerPlatformID,
     talentLayerService as TalentLayerService,
+    talentLayerEscrow as TalentLayerEscrow,
   ];
 }

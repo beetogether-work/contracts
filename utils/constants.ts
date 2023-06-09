@@ -6,7 +6,7 @@ export const ETH_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 // export const EVIDENCE_CID = 'QmNSARUuUMHkFcnSzrCAhmZkmQu7ViK18sPkg48xnbAmv4';
 
-// export const META_EVIDENCE_CID = 'QmQ2hcACF6r2Gf8PDxG4NcBdurzRUopwcaYQHNhSah6a8v';
+export const META_EVIDENCE_CID = 'QmQ2hcACF6r2Gf8PDxG4NcBdurzRUopwcaYQHNhSah6a8v';
 
 // export const ARBITRATION_FEE_TIMEOUT = 60 * 60 * 24 * 3; // 3 days
 

@@ -4,11 +4,18 @@ import { Hive, HiveFactory, TalentLayerID } from '../typechain-types';
 import { deploy } from '../utils/deploy';
 import { expect } from 'chai';
 import {
+  TalentLayerEscrow,
   TalentLayerPlatformID,
   TalentLayerService,
 } from '../typechain-types/contracts/tests/talentlayer';
-import { ETH_ADDRESS, MintStatus, ProposalRequestStatus } from '../utils/constants';
-import { ContractTransaction } from 'ethers';
+import {
+  ETH_ADDRESS,
+  FEE_DIVIDER,
+  META_EVIDENCE_CID,
+  MintStatus,
+  ProposalRequestStatus,
+} from '../utils/constants';
+import { BigNumber, ContractTransaction } from 'ethers';
 import { getSignature } from '../utils/signature';
 
 describe('HiveFactory', () => {
@@ -21,6 +28,7 @@ describe('HiveFactory', () => {
     talentLayerID: TalentLayerID,
     talentLayerPlatformID: TalentLayerPlatformID,
     talentLayerService: TalentLayerService,
+    talentLayerEscrow: TalentLayerEscrow,
     hiveAddress: string,
     hiveFactory: HiveFactory,
     hive: Hive;
@@ -34,18 +42,22 @@ describe('HiveFactory', () => {
   const platformId = 1;
   const mintFee = 100;
   const serviceId = 1;
-  const honeyFee = 1000;
+  const transactionId = 1;
+
   const proposalRequestId = 1;
-  // const proposalId = 1;
   const proposalToken = ETH_ADDRESS;
-  const proposalAmount = 1000;
+  const proposalAmount = BigNumber.from(1000);
   const proposalDataUri = 'QmNSARUuUMHkFcnSzrCAhmZkmQu7ViK18sPkg48xnbAmv4';
   const now = Math.floor(Date.now() / 1000);
   const proposalExpirationDate = now + 60 * 60 * 24 * 15;
+  const proposalMembers = [groupOwnerTlId, bobTlId];
+  const proposalShares = [4000, 5000];
+  const honeyFee = 1000;
 
   before(async () => {
     [deployer, platformOwner, groupOwner, bob, carol, dave] = await ethers.getSigners();
-    [hiveFactory, talentLayerID, talentLayerPlatformID, talentLayerService] = await deploy();
+    [hiveFactory, talentLayerID, talentLayerPlatformID, talentLayerService, talentLayerEscrow] =
+      await deploy();
 
     // Disable whitelist for reserved handles
     await talentLayerID.connect(deployer).updateMintStatus(MintStatus.PUBLIC);
@@ -158,7 +170,7 @@ describe('HiveFactory', () => {
   });
 
   describe('Create proposal request', async () => {
-    const proposalParams: [number, string, number, number, string, number] = [
+    const proposalParams: [number, string, BigNumber, number, string, number] = [
       serviceId,
       proposalToken,
       proposalAmount,
@@ -167,28 +179,33 @@ describe('HiveFactory', () => {
       proposalExpirationDate,
     ];
 
-    const members = [groupOwnerTlId, bobTlId];
-    const shares = [4500, 4500];
-
     it('Fails if user is not member of the group', async () => {
-      const tx = hive.connect(dave).createProposalRequest(...proposalParams, members, shares);
+      const tx = hive
+        .connect(dave)
+        .createProposalRequest(...proposalParams, proposalMembers, proposalShares);
       await expect(tx).to.be.revertedWith('Sender is not a member');
     });
 
     it('Fails if proposal members are not part of the group', async () => {
-      const tx = hive.connect(dave).createProposalRequest(...proposalParams, [daveTlId], shares);
+      const tx = hive
+        .connect(dave)
+        .createProposalRequest(...proposalParams, [daveTlId], proposalShares);
       await expect(tx).to.be.revertedWith('Sender is not a member');
     });
 
     it('Fails if the sum of the shares is not 100', async () => {
-      const tx = hive.connect(bob).createProposalRequest(...proposalParams, members, [5000, 5000]);
+      const tx = hive
+        .connect(bob)
+        .createProposalRequest(...proposalParams, proposalMembers, [5000, 5000]);
       await expect(tx).to.be.revertedWith('Shares sum is not 100%');
     });
 
     describe('Successfull creation of proposal request', async () => {
       before(async () => {
         // Bob creates a proposal request
-        await hive.connect(bob).createProposalRequest(...proposalParams, members, shares);
+        await hive
+          .connect(bob)
+          .createProposalRequest(...proposalParams, proposalMembers, proposalShares);
       });
 
       it('Updates the proposal request data', async () => {
@@ -216,23 +233,19 @@ describe('HiveFactory', () => {
     });
 
     describe('Successfull execution of proposal request', async () => {
-      let tx: ContractTransaction;
-
       before(async () => {
         // Carol joins the group
         const signature = await getSignature(groupOwner, hiveAddress);
         const handle = 'carol';
-        tx = await hive.connect(carol).join(signature, platformId, handle, {
+        await hive.connect(carol).join(signature, platformId, handle, {
           value: mintFee,
         });
 
         // Carol executes the proposal request
-        tx = await hive.connect(carol).executeProposalRequest(proposalRequestId);
+        await hive.connect(carol).executeProposalRequest(proposalRequestId);
       });
 
       it('Creates a proposal for the service', async () => {
-        await expect(tx).to.not.be.reverted;
-
         const proposal = await talentLayerService.proposals(serviceId, hiveTlId);
         expect(proposal.ownerId).to.equal(hiveTlId);
         expect(proposal.rateToken).to.equal(proposalToken);
@@ -245,6 +258,68 @@ describe('HiveFactory', () => {
         const tx = hive.connect(carol).executeProposalRequest(proposalRequestId);
         await expect(tx).to.be.revertedWith('Proposal request is not pending');
       });
+    });
+  });
+
+  describe('Accept proposal and release funds', async () => {
+    let tx: ContractTransaction;
+
+    before(async () => {
+      // Calculate total transaction amount
+      const platformData = await talentLayerPlatformID.platforms(daveTlId);
+      const proposal = await talentLayerService.proposals(serviceId, hiveTlId);
+      const protocolEscrowFeeRate = ethers.BigNumber.from(
+        await talentLayerEscrow.protocolEscrowFeeRate(),
+      );
+      const originServiceFeeRate = ethers.BigNumber.from(platformData.originServiceFeeRate);
+      const originValidatedProposalFeeRate = ethers.BigNumber.from(
+        platformData.originValidatedProposalFeeRate,
+      );
+      const { rateAmount } = proposal;
+      const totalAmount = rateAmount.add(
+        rateAmount
+          .mul(protocolEscrowFeeRate.add(originServiceFeeRate).add(originValidatedProposalFeeRate))
+          .div(ethers.BigNumber.from(FEE_DIVIDER)),
+      );
+
+      // Dave accepts the proposal
+      await talentLayerEscrow
+        .connect(dave)
+        .createTransaction(serviceId, hiveTlId, META_EVIDENCE_CID, proposal.dataUri, {
+          value: totalAmount,
+        });
+
+      // Dave releases funds of the transaction
+      tx = await talentLayerEscrow.connect(dave).release(daveTlId, transactionId, proposalAmount);
+    });
+
+    it('Transfers the funds to the Hive contract', async () => {
+      await expect(tx).to.changeEtherBalances([hive], [proposalAmount]);
+    });
+  });
+
+  describe('Share funds', async () => {
+    let tx: ContractTransaction;
+
+    before(async () => {
+      // Share funds
+      tx = await hive.connect(bob).shareFunds(proposalRequestId);
+    });
+
+    it('Shares the funds to proposal members based on the share', async () => {
+      const amounts = proposalMembers.map((member, index) =>
+        proposalAmount.mul(proposalShares[index]).div(FEE_DIVIDER),
+      );
+
+      await expect(tx).to.changeEtherBalances([groupOwner, bob], amounts);
+    });
+
+    it('Keeps the honey fee in the Hive contract', async () => {
+      const amount = proposalAmount.mul(honeyFee).div(FEE_DIVIDER);
+      await expect(tx).to.changeEtherBalances([hive], [proposalAmount.sub(amount).mul(-1)]);
+
+      const hiveBalance = await ethers.provider.getBalance(hive.address);
+      expect(hiveBalance).to.be.equal(amount);
     });
   });
 });

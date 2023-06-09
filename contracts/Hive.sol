@@ -3,9 +3,11 @@ pragma solidity ^0.8.9;
 
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {ITalentLayerID} from "./interfaces/ITalentLayerID.sol";
 import {ITalentLayerService} from "./interfaces/ITalentLayerService.sol";
+import {ITalentLayerEscrow} from "./interfaces/ITalentLayerEscrow.sol";
 
 import "hardhat/console.sol";
 
@@ -25,6 +27,9 @@ contract Hive {
 
     // The TalentLayerService contract.
     ITalentLayerService talentLayerService;
+
+    // The TalentLayerEscrow contract.
+    ITalentLayerEscrow talentLayerEscrow;
 
     // Fee percentage (per 10,000) that goes to the Hive treasury per each transaction
     uint16 public honeyFee;
@@ -54,6 +59,7 @@ contract Hive {
         string dataUri;
         uint256 expirationDate;
         ProposalRequestStatus status;
+        uint256 sharedAmount; // Amount of funds that has already been shared
         // bytes signature;
     }
 
@@ -104,10 +110,18 @@ contract Hive {
      * @param _honeyFee The fee percentage (per 10,000) for the Hive treasury.
      * @param _talentLayerIdAddress The address of the TalentLayerID contract.
      * @param _talentLayerServiceAddress The address of the TalentLayerService contract.
+     * @param _talentLayerEscrowAddress The address of the TalentLayerEscrow contract.
      */
-    constructor(address _owner, uint16 _honeyFee, address _talentLayerIdAddress, address _talentLayerServiceAddress) {
+    constructor(
+        address _owner,
+        uint16 _honeyFee,
+        address _talentLayerIdAddress,
+        address _talentLayerServiceAddress,
+        address _talentLayerEscrowAddress
+    ) {
         talentLayerId = ITalentLayerID(_talentLayerIdAddress);
         talentLayerService = ITalentLayerService(_talentLayerServiceAddress);
+        talentLayerEscrow = ITalentLayerEscrow(_talentLayerEscrowAddress);
         owner = _owner;
         honeyFee = _honeyFee;
 
@@ -197,7 +211,8 @@ contract Hive {
             platformId: _platformId,
             dataUri: _dataUri,
             expirationDate: _expirationDate,
-            status: ProposalRequestStatus.Pending
+            status: ProposalRequestStatus.Pending,
+            sharedAmount: 0
             // signature: _signature
         });
         nextProposalRequestId.increment();
@@ -235,6 +250,33 @@ contract Hive {
 
         emit ProposalRequestExecuted(_proposalRequestId, senderId);
     }
+
+    /**
+     * @notice Shares the funds of a proposal request.
+     */
+    function shareFunds(uint256 _proposalRequestId) public payable {
+        ProposalRequest memory proposalRequest = proposalRequests[_proposalRequestId];
+
+        ITalentLayerService.Service memory service = talentLayerService.getService(proposalRequest.serviceId);
+        ITalentLayerEscrow.Transaction memory transaction = talentLayerEscrow.getTransactionDetails(
+            service.transactionId
+        );
+        uint256 amountToShare = transaction.releasedAmount - proposalRequest.sharedAmount;
+
+        // Share funds between all the members of the proposal request, based on the shares
+        for (uint256 i = 0; i < proposalRequest.members.length; i++) {
+            uint256 share = (amountToShare * proposalRequest.shares[i]) / FEE_DIVIDER;
+            address memberAddress = talentLayerId.ownerOf(proposalRequest.members[i]);
+            _transferBalance(memberAddress, transaction.token, share);
+        }
+
+        // Update shared amount
+        proposalRequests[_proposalRequestId].sharedAmount += amountToShare;
+    }
+
+    // =========================== Receive function ==============================
+
+    receive() external payable {}
 
     // =========================== Internal functions ==============================
 
@@ -274,11 +316,27 @@ contract Hive {
      * @notice Mint a TalentLayer ID to a given address.
      */
     function _mintTlId(address _address, uint256 _platformId, string memory _handle) public payable returns (uint256) {
+        console.log("minting");
         (bool success, bytes memory data) = address(talentLayerId).call{value: msg.value}(
             abi.encodeWithSignature("mintForAddress(address,uint256,string)", _address, _platformId, _handle)
         );
         require(success, "Minting failed");
 
         return abi.decode(data, (uint256));
+    }
+
+    /**
+     * @notice Transfers a token or ETH balance from the escrow to a recipient's address.
+     * @param _recipient The address to transfer the balance to
+     * @param _tokenAddress The token address, or zero address for ETH
+     * @param _amount The amount to transfer
+     */
+    function _transferBalance(address _recipient, address _tokenAddress, uint256 _amount) private {
+        if (address(0) == _tokenAddress) {
+            (bool success, ) = payable(_recipient).call{value: _amount}("");
+            require(success, "Transfer failed");
+        } else {
+            IERC20(_tokenAddress).transfer(_recipient, _amount);
+        }
     }
 }

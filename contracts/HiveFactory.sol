@@ -4,6 +4,7 @@ pragma solidity ^0.8.9;
 import {Hive} from "./Hive.sol";
 import {ITalentLayerID} from "./interfaces/ITalentLayerID.sol";
 import {ITalentLayerService} from "./interfaces/ITalentLayerService.sol";
+import {ITalentLayerEscrow} from "./interfaces/ITalentLayerEscrow.sol";
 
 import "hardhat/console.sol";
 
@@ -18,6 +19,9 @@ contract HiveFactory {
     // The TalentLayerService contract.
     ITalentLayerService talentLayerService;
 
+    // The TalentLayerEscrow contract.
+    ITalentLayerEscrow talentLayerEscrow;
+
     // =========================== Events ==============================
 
     event HiveCreated(address hiveAddress);
@@ -27,10 +31,12 @@ contract HiveFactory {
     /**
      * @param _talentLayerIdAddress The address of the TalentLayerID contract.
      * @param _talentLayerServiceAddress The address of the TalentLayerService contract.
+     * @param _talentLayerEscrowAddress The address of the TalentLayerEscrow contract.
      */
-    constructor(address _talentLayerIdAddress, address _talentLayerServiceAddress) {
+    constructor(address _talentLayerIdAddress, address _talentLayerServiceAddress, address _talentLayerEscrowAddress) {
         talentLayerId = ITalentLayerID(_talentLayerIdAddress);
         talentLayerService = ITalentLayerService(_talentLayerServiceAddress);
+        talentLayerEscrow = ITalentLayerEscrow(_talentLayerEscrowAddress);
     }
 
     // =========================== User functions ==============================
@@ -56,7 +62,13 @@ contract HiveFactory {
         }
 
         // Deploy new Hive contract
-        Hive hive = new Hive(msg.sender, _honeyFee, address(talentLayerId), address(talentLayerService));
+        Hive hive = new Hive(
+            msg.sender,
+            _honeyFee,
+            address(talentLayerId),
+            address(talentLayerService),
+            address(talentLayerEscrow)
+        );
 
         // Mint TalentLayer ID to Hive
         uint256 hiveId = _mintTlId(address(hive), _platformId, _groupHandle, msg.value / 2);
