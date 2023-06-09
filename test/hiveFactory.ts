@@ -77,7 +77,7 @@ describe('HiveFactory', () => {
     let tx: ContractTransaction;
 
     before(async () => {
-      const signature = await getSignature(groupOwner);
+      const signature = await getSignature(groupOwner, hiveAddress);
 
       // Bob joins the group
       tx = await hive.connect(bob).join(signature);

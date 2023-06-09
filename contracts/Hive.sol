@@ -28,9 +28,6 @@ contract Hive {
     constructor(address _talentLayerIdAddress, address _owner) {
         talentLayerId = ITalentLayerID(_talentLayerIdAddress);
 
-        console.log("Owner");
-        console.log(_owner);
-
         owner = _owner;
     }
 
@@ -47,8 +44,9 @@ contract Hive {
      * @param _signature platform signature to allow the operation
      */
     function _validateOwnerSignature(bytes calldata _signature) private view {
-        bytes32 messageHash = keccak256(abi.encodePacked("join"));
+        bytes32 messageHash = keccak256(abi.encodePacked("join", address(this)));
         bytes32 ethMessageHash = ECDSA.toEthSignedMessageHash(messageHash);
+
         address signer = ECDSA.recover(ethMessageHash, _signature);
         require(owner == signer, "Invalid signature");
     }
