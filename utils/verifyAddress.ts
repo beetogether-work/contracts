@@ -10,7 +10,7 @@ export async function verifyAddress(
     try {
       console.log('Verifying contract at', address);
       // @ts-ignore
-      run('verify:verify', {
+      await run('verify:verify', {
         address: address,
         constructorArguments: constructorArguments,
       });

@@ -17,11 +17,10 @@ async function main() {
   const platformId = 1;
   const groupHandle = 'my-hive';
   const ownerHandle = 'alice';
+  const honeyFee = 100;
   const tx = await hiveFactory
     .connect(groupOwner)
-    .createHive(platformId, groupHandle, ownerHandle, {
-      // value: 100,
-    });
+    .createHive(platformId, groupHandle, ownerHandle, honeyFee);
   await tx.wait();
 }
 

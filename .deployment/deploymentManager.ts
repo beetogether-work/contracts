@@ -5,6 +5,8 @@ export const CONTRACT_NAMES = [
   'Hive',
   'TalentLayerID',
   'TalentLayerPlatformID',
+  'TalentLayerService',
+  'TalentLayerEscrow',
 ] as const;
 
 export type ContractName = (typeof CONTRACT_NAMES)[number];
