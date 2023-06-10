@@ -58,7 +58,8 @@ contract HiveFactory {
     ) public payable returns (uint256) {
         // Mint TalentLayer ID to sender if doesn't have it
         uint256 ownerId = talentLayerId.ids(msg.sender);
-        if (ownerId == 0) {
+        bool ownerHasTlId = ownerId != 0;
+        if (!ownerHasTlId) {
             ownerId = _mintTlId(msg.sender, _platformId, _ownerHandle, msg.value / 2);
         }
 
@@ -72,14 +73,20 @@ contract HiveFactory {
         );
 
         // Mint TalentLayer ID to Hive
-        uint256 hiveId = _mintTlId(address(hive), _platformId, _groupHandle, ownerId == 0 ? msg.value / 2 : msg.value);
+        uint256 hiveId = _mintTlId(address(hive), _platformId, _groupHandle, ownerHasTlId ? msg.value : msg.value / 2);
 
         // Deploy new Paymaster contract and set it to the Hive
-        // TODO: Do this only if the chain is zkSync
-        HivePaymaster paymaster = new HivePaymaster(address(hive), address(talentLayerId));
-        hive.setPaymaster(address(paymaster));
+        address paymasterAddress = address(0);
 
-        emit HiveCreated(hiveId, address(hive), ownerId, _honeyFee, address(paymaster));
+        uint256 chainId = getChainID();
+        if (chainId == 280 || chainId == 31337) {
+            // Do this only if the chain is Hardhat or zkSync (Paymaster doesn't work on other chains)
+            HivePaymaster paymaster = new HivePaymaster(address(hive), address(talentLayerId));
+            hive.setPaymaster(address(paymaster));
+            paymasterAddress = address(paymaster);
+        }
+
+        emit HiveCreated(hiveId, address(hive), ownerId, _honeyFee, paymasterAddress);
 
         return hiveId;
     }
@@ -101,5 +108,15 @@ contract HiveFactory {
         require(success, "Minting failed");
 
         return abi.decode(data, (uint256));
+    }
+
+    // =========================== Internal functions ==============================
+
+    function getChainID() internal view returns (uint256) {
+        uint256 chainId;
+        assembly {
+            chainId := chainid()
+        }
+        return chainId;
     }
 }
