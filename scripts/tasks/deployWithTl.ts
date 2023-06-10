@@ -224,7 +224,7 @@ task('deploy-with-tl', 'Deploy all TalentLayer contracts and BeeTogether contrac
 
     // Dave creates a service
     const serviceData = {
-      title: 'Full Stack Developer Job 2',
+      title: 'AR Developer',
       about: 'Looking for Full Stack Developer 2',
       keywords: 'BlockChain',
       role: 'developer',

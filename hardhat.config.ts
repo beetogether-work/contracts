@@ -40,7 +40,7 @@ const config: HardhatUserConfig = {
             enabled: true,
             runs: 200,
           },
-          // viaIR: true,
+          viaIR: true,
         },
       },
     ],
@@ -58,6 +58,10 @@ const config: HardhatUserConfig = {
       ethNetwork: 'goerli', // Can also be the RPC URL of the network (e.g. `https://goerli.infura.io/v3/<API_KEY>`)
       zksync: true,
       verifyURL: 'https://zksync2-testnet-explorer.zksync.dev/contract_verification',
+      accounts,
+    },
+    'mantle-testnet': {
+      url: 'https://rpc.testnet.mantle.xyz/',
       accounts,
     },
   },

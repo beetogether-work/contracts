@@ -15,6 +15,9 @@ deploy-verify:
 deploy-zk-sync: 
 	npx hardhat deploy-zk-sync --network zkSyncTestnet
 
+deploy-mantle: 
+	npx hardhat deploy-with-tl --network mantle-testnet
+
 #-------------- PLAYGROUND ----------------#
 
 setup-tl:
