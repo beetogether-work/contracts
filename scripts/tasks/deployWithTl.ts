@@ -3,6 +3,7 @@ import { verifyAddress } from '../../utils/verifyAddress';
 import { task } from 'hardhat/config';
 import { ETH_ADDRESS, MintStatus } from '../../utils/constants';
 import { Network, NetworkConfig, getConfig } from '../../networkConfig';
+import uploadToIPFS from '../../utils/uploadToIpfs';
 
 task('deploy-with-tl', 'Deploy all TalentLayer contracts and BeeTogether contracts')
   .addFlag('useTestErc20', 'deploy a mock ERC20 contract')
@@ -222,10 +223,21 @@ task('deploy-with-tl', 'Deploy all TalentLayer contracts and BeeTogether contrac
     await talentLayerPlatformID.connect(platformOwner).mint('bee-together');
 
     // Dave creates a service
-    const serviceDataUri = 'QmNSARUuUMHkFcnSzrCAhmZkmQu7ViK18sPkg48xnbAmv3';
+    const serviceData = {
+      title: 'Full Stack Developer Job 2',
+      about: 'Looking for Full Stack Developer 2',
+      keywords: 'BlockChain',
+      role: 'developer',
+      rateToken: '0x0000000000000000000000000000000000000000',
+      rateAmount: 1,
+      recipient: '',
+    };
+    const dataUri = await uploadToIPFS(serviceData);
+    if (!dataUri) throw new Error('Failed to upload to IPFS');
+
     const daveId = 1;
     const platformId = 1;
-    await talentLayerService.connect(dave).createService(daveId, platformId, serviceDataUri, []);
+    await talentLayerService.connect(dave).createService(daveId, platformId, dataUri, []);
 
     // =========================== Deploy BeeTogether ==============================
 
