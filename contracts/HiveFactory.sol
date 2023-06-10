@@ -71,7 +71,7 @@ contract HiveFactory {
         );
 
         // Mint TalentLayer ID to Hive
-        uint256 hiveId = _mintTlId(address(hive), _platformId, _groupHandle, msg.value / 2);
+        uint256 hiveId = _mintTlId(address(hive), _platformId, _groupHandle, ownerId == 0 ? msg.value / 2 : msg.value);
 
         emit HiveCreated(hiveId, address(hive), ownerId, _honeyFee);
 
