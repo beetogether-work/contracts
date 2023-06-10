@@ -8,15 +8,21 @@ async function main() {
 
   const [, , , groupOwner, bob, carol] = await ethers.getSigners();
 
-  // Get contracts
+  const talentLayerID = await ethers.getContractAt(
+    'TalentLayerID',
+    getDeploymentAddress(network, 'TalentLayerID'),
+  );
+
+  const mintFee = await talentLayerID.mintFee();
+
   const hive = await ethers.getContractAt('Hive', getDeploymentAddress(network, 'Hive'));
 
   const signature = await getSignature(groupOwner, hive.address);
 
   // Join hive
   const platformId = 1;
-  await hive.connect(bob).join(signature, platformId, 'bob__');
-  await hive.connect(carol).join(signature, platformId, 'carol');
+  await hive.connect(bob).join(signature, platformId, 'bob__', { value: mintFee });
+  await hive.connect(carol).join(signature, platformId, 'carol', { value: mintFee });
 
   console.log('Joined hive');
 }

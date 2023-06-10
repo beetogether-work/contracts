@@ -1,3 +1,3 @@
 # Bee Together Contracts
 
-HiveFactory: [0xD423be87C7F72026d40934B442e27637e0A5D4Ec](https://mumbai.polygonscan.com/address/0xD423be87C7F72026d40934B442e27637e0A5D4Ec)
+HiveFactory: [0xeecFd8a85fbB9BbA5Dac2022C824e1c42C5d9634](https://mumbai.polygonscan.com/address/0xeecFd8a85fbB9BbA5Dac2022C824e1c42C5d9634)

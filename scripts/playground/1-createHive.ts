@@ -13,6 +13,13 @@ async function main() {
     getDeploymentAddress(network, 'HiveFactory'),
   );
 
+  const talentLayerID = await ethers.getContractAt(
+    'TalentLayerID',
+    getDeploymentAddress(network, 'TalentLayerID'),
+  );
+
+  const mintFee = await talentLayerID.mintFee();
+
   // Create course
   const platformId = 1;
   const groupHandle = 'my-hive';
@@ -20,7 +27,9 @@ async function main() {
   const honeyFee = 1000;
   const tx = await hiveFactory
     .connect(groupOwner)
-    .createHive(platformId, groupHandle, ownerHandle, honeyFee);
+    .createHive(platformId, groupHandle, ownerHandle, honeyFee, {
+      value: mintFee.mul(2),
+    });
   const receipt = await tx.wait();
 
   const hiveAddress = receipt.events?.find((e) => e.event === 'HiveCreated')?.args?.hiveAddress;
