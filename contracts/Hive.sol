@@ -114,7 +114,7 @@ contract Hive {
     /**
      * @dev Emitted when the data uri is udpated
      */
-    event DataUriUpdated(string dataUri);
+    event DataUriUpdated(uint256 hiveId, string dataUri);
 
     // =========================== Modifiers ==============================
 
@@ -323,7 +323,7 @@ contract Hive {
         require(bytes(_dataUri).length == 46, "Invalid cid");
         dataUri = _dataUri;
 
-        emit DataUriUpdated(_dataUri);
+        emit DataUriUpdated(hiveId(), _dataUri);
     }
 
     // =========================== Receive function ==============================

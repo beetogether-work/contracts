@@ -6,17 +6,17 @@ async function main() {
   const network = hre.network.name;
   console.log('Network:', network);
 
-  const [, , groupOwner, bob] = await ethers.getSigners();
+  const [, , , groupOwner, bob, carol] = await ethers.getSigners();
 
   // Get contracts
   const hive = await ethers.getContractAt('Hive', getDeploymentAddress(network, 'Hive'));
 
   const signature = await getSignature(groupOwner, hive.address);
 
-  // Update data
+  // Join hive
   const platformId = 1;
-  const handle = 'bob__';
-  await hive.connect(bob).join(signature, platformId, handle);
+  await hive.connect(bob).join(signature, platformId, 'bob__');
+  await hive.connect(carol).join(signature, platformId, 'carol');
 
   console.log('Joined hive');
 }

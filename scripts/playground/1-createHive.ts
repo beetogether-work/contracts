@@ -5,7 +5,7 @@ async function main() {
   const network = hre.network.name;
   console.log('Network:', network);
 
-  const [, , groupOwner] = await ethers.getSigners();
+  const [, , , groupOwner] = await ethers.getSigners();
 
   // Get contracts
   const hiveFactory = await ethers.getContractAt(
@@ -16,8 +16,8 @@ async function main() {
   // Create course
   const platformId = 1;
   const groupHandle = 'my-hive';
-  const ownerHandle = 'alice';
-  const honeyFee = 100;
+  const ownerHandle = 'group-owner';
+  const honeyFee = 1000;
   const tx = await hiveFactory
     .connect(groupOwner)
     .createHive(platformId, groupHandle, ownerHandle, honeyFee);

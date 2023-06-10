@@ -6,7 +6,7 @@ async function main() {
   const network = hre.network.name;
   console.log('Network:', network);
 
-  const [, , groupOwner] = await ethers.getSigners();
+  const [, , , groupOwner] = await ethers.getSigners();
 
   // Get contracts
   const hive = await ethers.getContractAt('Hive', getDeploymentAddress(network, 'Hive'));
