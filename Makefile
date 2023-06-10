@@ -26,9 +26,12 @@ join-hive:
 create-proposal-request:
 	npx hardhat run scripts/playground/4-createProposalRequest.ts --network $(NETWORK)
 
+execute-proposal-request:
+	npx hardhat run scripts/playground/5-executeProposalRequest.ts --network $(NETWORK)
+
 #-------------- SETUP ----------------#
 
-setup: deploy setup-tl create-hive update-hive-data join-hive create-proposal-request
+setup: deploy setup-tl create-hive update-hive-data join-hive create-proposal-request execute-proposal-request
 
 #-------------- SUBGRAPH ----------------#
 

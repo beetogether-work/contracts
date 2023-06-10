@@ -35,6 +35,8 @@ async function main() {
 
   const dataUri = await uploadToIPFS(proposalData);
   if (!dataUri) throw new Error('Failed to upload to IPFS');
+
+  // Create proposal request
   await hive
     .connect(bob)
     .createProposalRequest(
