@@ -347,6 +347,14 @@ contract Hive {
         emit DataUriUpdated(hiveId(), _dataUri);
     }
 
+    /**
+     * @notice Updates the TalentLayer profile data of the hive
+     */
+    function updateProfileData(string memory _dataUri) public onlyMember {
+        require(bytes(_dataUri).length == 46, "Invalid cid");
+        talentLayerId.updateProfileData(hiveId(), _dataUri);
+    }
+
     // =========================== HiveFactory functions ==============================
 
     /**
