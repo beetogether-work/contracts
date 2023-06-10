@@ -2,6 +2,7 @@
 pragma solidity ^0.8.9;
 
 import {Hive} from "./Hive.sol";
+import {HivePaymaster} from "./HivePaymaster.sol";
 import {ITalentLayerID} from "./interfaces/ITalentLayerID.sol";
 import {ITalentLayerService} from "./interfaces/ITalentLayerService.sol";
 import {ITalentLayerEscrow} from "./interfaces/ITalentLayerEscrow.sol";
@@ -72,6 +73,11 @@ contract HiveFactory {
 
         // Mint TalentLayer ID to Hive
         uint256 hiveId = _mintTlId(address(hive), _platformId, _groupHandle, msg.value / 2);
+
+        // Deploy new Paymaster contract and set it to the Hive
+        // TODO: Do this only if the chain is zkSync
+        HivePaymaster paymaster = new HivePaymaster(address(hive), address(talentLayerId));
+        hive.setPaymaster(address(paymaster));
 
         emit HiveCreated(hiveId, address(hive), ownerId, _honeyFee);
 

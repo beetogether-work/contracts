@@ -31,8 +31,13 @@ contract Hive {
     // The TalentLayerEscrow contract.
     ITalentLayerEscrow talentLayerEscrow;
 
+    address public hiveFactoryAddress;
+
     // Fee percentage (per 10,000) that goes to the Hive treasury per each transaction
     uint16 public honeyFee;
+
+    // Paymaster address
+    address public paymasterAddress;
 
     // Owner of the group
     address public owner;
@@ -127,6 +132,15 @@ contract Hive {
         _;
     }
 
+    /**
+     * @dev Checks that the sender is member of the group.
+     */
+    modifier onlyHiveFactory() {
+        // Check if sender is a member
+        require(msg.sender == hiveFactoryAddress, "Sender is not HiveFactory");
+        _;
+    }
+
     // =========================== Constructor ==============================
 
     /**
@@ -148,6 +162,7 @@ contract Hive {
         talentLayerEscrow = ITalentLayerEscrow(_talentLayerEscrowAddress);
         owner = _owner;
         honeyFee = _honeyFee;
+        hiveFactoryAddress = msg.sender;
 
         nextProposalRequestId.increment();
 
@@ -324,6 +339,15 @@ contract Hive {
         dataUri = _dataUri;
 
         emit DataUriUpdated(hiveId(), _dataUri);
+    }
+
+    // =========================== HiveFactory functions ==============================
+
+    /**
+     * Sets
+     */
+    function setPaymaster(address _paymasterAddress) public onlyHiveFactory {
+        paymasterAddress = _paymasterAddress;
     }
 
     // =========================== Receive function ==============================

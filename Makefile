@@ -12,6 +12,9 @@ deploy-with-tl:
 deploy-verify: 
 	npx hardhat deploy --verify --network $(NETWORK)
 
+deploy-zk-sync: 
+	npx hardhat deploy-zk-sync --network zkSyncTestnet
+
 #-------------- PLAYGROUND ----------------#
 
 setup-tl:
@@ -34,6 +37,9 @@ execute-proposal-request:
 
 share-funds:
 	npx hardhat run scripts/playground/6-shareFunds.ts --network $(NETWORK)
+
+use-paymaster:
+	npx hardhat run scripts/usePaymaster.ts --network zkSyncTestnet
 
 #-------------- SETUP ----------------#
 

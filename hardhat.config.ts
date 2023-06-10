@@ -2,9 +2,12 @@ import { HardhatUserConfig } from 'hardhat/config';
 import 'hardhat-contract-sizer';
 import '@nomicfoundation/hardhat-toolbox';
 import '@openzeppelin/hardhat-upgrades';
+import '@matterlabs/hardhat-zksync-deploy';
+import '@matterlabs/hardhat-zksync-solc';
 
 import './scripts/tasks/deploy';
 import './scripts/tasks/deployWithTl';
+import './scripts/tasks/deployZkSync';
 
 import dotenv from 'dotenv';
 
@@ -21,6 +24,11 @@ const accounts = {
 };
 
 const config: HardhatUserConfig = {
+  zksolc: {
+    version: '1.3.11', // Use latest available in https://github.com/matter-labs/zksolc-bin/
+    compilerSource: 'binary',
+    settings: {},
+  },
   solidity: {
     compilers: [
       {
@@ -36,8 +44,18 @@ const config: HardhatUserConfig = {
     ],
   },
   networks: {
+    hardhat: {
+      zksync: true,
+      accounts,
+    },
     mumbai: {
       url: 'https://matic-mumbai.chainstacklabs.com',
+      accounts,
+    },
+    zkSyncTestnet: {
+      url: 'https://testnet.era.zksync.dev',
+      ethNetwork: 'goerli', // Can also be the RPC URL of the network (e.g. `https://goerli.infura.io/v3/<API_KEY>`)
+      zksync: true,
       accounts,
     },
   },

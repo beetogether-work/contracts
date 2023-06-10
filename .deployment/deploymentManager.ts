@@ -3,6 +3,7 @@ import { loadJSON, saveJSON } from '../utils/files';
 export const CONTRACT_NAMES = [
   'HiveFactory',
   'Hive',
+  'HivePaymaster',
   'TalentLayerID',
   'TalentLayerPlatformID',
   'TalentLayerService',
