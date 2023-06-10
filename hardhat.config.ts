@@ -4,6 +4,8 @@ import '@nomicfoundation/hardhat-toolbox';
 import '@openzeppelin/hardhat-upgrades';
 import '@matterlabs/hardhat-zksync-deploy';
 import '@matterlabs/hardhat-zksync-solc';
+import '@matterlabs/hardhat-zksync-upgradable';
+import '@matterlabs/hardhat-zksync-verify';
 
 import './scripts/tasks/deploy';
 import './scripts/tasks/deployWithTl';
@@ -46,7 +48,6 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       zksync: true,
-      accounts,
     },
     mumbai: {
       url: 'https://matic-mumbai.chainstacklabs.com',
@@ -56,6 +57,7 @@ const config: HardhatUserConfig = {
       url: 'https://testnet.era.zksync.dev',
       ethNetwork: 'goerli', // Can also be the RPC URL of the network (e.g. `https://goerli.infura.io/v3/<API_KEY>`)
       zksync: true,
+      verifyURL: 'https://zksync2-testnet-explorer.zksync.dev/contract_verification',
       accounts,
     },
   },

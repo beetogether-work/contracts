@@ -7,7 +7,7 @@ deploy:
 	npx hardhat deploy --network $(NETWORK)
 
 deploy-with-tl: 
-	npx hardhat deploy-with-tl --use-test-erc20 --network $(NETWORK)
+	npx hardhat deploy-with-tl --use-test-erc20 --verify --network $(NETWORK)
 
 deploy-verify: 
 	npx hardhat deploy --verify --network $(NETWORK)
