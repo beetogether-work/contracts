@@ -57,7 +57,8 @@ contract HiveFactory {
     ) public payable returns (uint256) {
         // Mint TalentLayer ID to sender if doesn't have it
         uint256 ownerId = talentLayerId.ids(msg.sender);
-        if (ownerId == 0) {
+        bool ownerHasTlId = ownerId != 0;
+        if (!ownerHasTlId) {
             ownerId = _mintTlId(msg.sender, _platformId, _ownerHandle, msg.value / 2);
         }
 
@@ -71,7 +72,7 @@ contract HiveFactory {
         );
 
         // Mint TalentLayer ID to Hive
-        uint256 hiveId = _mintTlId(address(hive), _platformId, _groupHandle, ownerId == 0 ? msg.value / 2 : msg.value);
+        uint256 hiveId = _mintTlId(address(hive), _platformId, _groupHandle, ownerHasTlId ? msg.value : msg.value / 2);
 
         emit HiveCreated(hiveId, address(hive), ownerId, _honeyFee);
 
