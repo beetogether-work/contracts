@@ -13,9 +13,12 @@ async function main() {
   const hive = await ethers.getContractAt('Hive', getDeploymentAddress(network, 'Hive'));
 
   // Update data
-  const groupOwnerTlId = 120;
-  const bobTlId = 122;
-  const serviceId = 100;
+  // const groupOwnerTlId = 120;
+  // const bobTlId = 122;
+  // const serviceId = 100;
+  const groupOwnerTlId = 2;
+  const bobTlId = 4;
+  const serviceId = 1;
   const tokenAddress = ETH_ADDRESS;
   const proposalAmount = ethers.utils.parseEther('0.001');
   const now = Math.floor(Date.now() / 1000);
