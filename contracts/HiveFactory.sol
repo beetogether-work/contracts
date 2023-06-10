@@ -25,7 +25,7 @@ contract HiveFactory {
 
     // =========================== Events ==============================
 
-    event HiveCreated(uint256 id, address hiveAddress, uint256 ownerId, uint16 honeyFee);
+    event HiveCreated(uint256 id, address hiveAddress, uint256 ownerId, uint16 honeyFee, address paymasterAddress);
 
     // =========================== Constructor ==============================
 
@@ -79,7 +79,7 @@ contract HiveFactory {
         HivePaymaster paymaster = new HivePaymaster(address(hive), address(talentLayerId));
         hive.setPaymaster(address(paymaster));
 
-        emit HiveCreated(hiveId, address(hive), ownerId, _honeyFee);
+        emit HiveCreated(hiveId, address(hive), ownerId, _honeyFee, address(paymaster));
 
         return hiveId;
     }

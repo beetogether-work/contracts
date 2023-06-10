@@ -310,6 +310,12 @@ contract Hive {
             _transferBalance(memberAddress, transaction.token, share);
         }
 
+        // Transfer honey fee to Paymaster
+        if (paymasterAddress != address(0)) {
+            uint256 paymasterShare = (amountToShare * honeyFee) / FEE_DIVIDER;
+            _transferBalance(paymasterAddress, transaction.token, paymasterShare);
+        }
+
         // Update shared amount
         proposalRequests[_proposalRequestId].sharedAmount += amountToShare;
 
