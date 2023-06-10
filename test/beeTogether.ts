@@ -40,8 +40,8 @@ const tests = (isEth: boolean) => {
   const daveTlId = 1;
   const groupOwnerTlId = 2;
   const hiveTlId = 3;
-  const bobTlId = 4;
-  // const carolTlId = 5;
+  const bobTlId = 5;
+  // const carolTlId = 6;
 
   const platformId = 1;
   const mintFee = 100;
@@ -104,7 +104,7 @@ const tests = (isEth: boolean) => {
     await talentLayerService.connect(dave).createService(daveTlId, platformId, serviceDataUri, []);
   });
 
-  describe('Create Hive', async () => {
+  describe('Create Hive (owner does not have a TL id)', async () => {
     let tx: ContractTransaction;
 
     const groupHandle = 'my-hive';
@@ -159,6 +159,60 @@ const tests = (isEth: boolean) => {
     it('Sets the paymaster on the hive', async () => {
       const paymaster = await hive.paymasterAddress();
       expect(paymaster).to.equal(paymasterAddress);
+    });
+  });
+
+  describe('Create Second Hive (owner already has a TL id)', async () => {
+    let tx: ContractTransaction,
+      secondHive: Hive,
+      secondHiveAddress: string,
+      secondPaymasterAddress: string;
+
+    const secondGroupHandle = 'my-second-hive';
+
+    before(async () => {
+      tx = await hiveFactory
+        .connect(groupOwner)
+        .createHive(platformId, secondGroupHandle, '', honeyFee, {
+          value: mintFee,
+        });
+
+      const receipt = await tx.wait();
+
+      secondHiveAddress = receipt.events?.find((e) => e.event === 'HiveCreated')?.args?.hiveAddress;
+      secondPaymasterAddress = receipt.events?.find((e) => e.event === 'HiveCreated')?.args
+        ?.paymasterAddress;
+
+      secondHive = await ethers.getContractAt('Hive', secondHiveAddress);
+    });
+
+    it('Does not mint a TalentLayer ID to the owner', async () => {
+      await expect(tx).to.changeTokenBalance(talentLayerID, groupOwner, 0);
+    });
+
+    it('Sets the owner of the group', async () => {
+      const owner = await secondHive.owner();
+      expect(owner).to.equal(groupOwner.address);
+    });
+
+    it('Adds the owner of the members group', async () => {
+      const isMember = await secondHive.members(groupOwnerTlId);
+      expect(isMember).to.be.equal(true);
+    });
+
+    it('Mints a TalentLayer ID to the group', async () => {
+      await expect(tx).to.changeTokenBalance(talentLayerID, secondHive, 1);
+
+      const groupId = await talentLayerID.ids(secondHiveAddress);
+      const profile = await talentLayerID.connect(groupOwner).profiles(groupId);
+
+      expect(profile.platformId).to.equal(platformId);
+      expect(profile.handle).to.equal(secondGroupHandle);
+    });
+
+    it('Sets the paymaster on the hive', async () => {
+      const paymaster = await secondHive.paymasterAddress();
+      expect(paymaster).to.equal(secondPaymasterAddress);
     });
   });
 
