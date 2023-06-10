@@ -6,10 +6,9 @@ async function main() {
   const network = hre.network.name;
   console.log('Network:', network);
 
-  const [deployer, platformOwner, alice] = await ethers.getSigners();
+  const [deployer, platformOwner, , , , dave] = await ethers.getSigners();
 
   // Get contracts
-
   const talentLayerID = await ethers.getContractAt(
     'TalentLayerID',
     getDeploymentAddress(network, 'TalentLayerID'),
@@ -20,14 +19,10 @@ async function main() {
     getDeploymentAddress(network, 'TalentLayerService'),
   );
 
-  console.log('talentLayerID', talentLayerID.address);
-
   const talentLayerPlatformID = await ethers.getContractAt(
     'TalentLayerPlatformID',
     getDeploymentAddress(network, 'TalentLayerPlatformID'),
   );
-
-  console.log('TalentLayerPlatformID', talentLayerPlatformID.address);
 
   // Disable whitelist for reserved handles
   await talentLayerID.connect(deployer).updateMintStatus(MintStatus.PUBLIC);
@@ -46,7 +41,7 @@ async function main() {
   await talentLayerID.connect(deployer).setIsServiceContract(talentLayerService.address, true);
 
   // Dave mints a TalentLayer ID
-  await talentLayerID.connect(alice).mint(0, 'alice');
+  await talentLayerID.connect(dave).mint(0, 'dave_');
 
   // Create PlatformId
   await talentLayerPlatformID.connect(deployer).whitelistUser(platformOwner.address);

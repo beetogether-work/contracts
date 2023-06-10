@@ -6,6 +6,9 @@ include .env
 deploy: 
 	npx hardhat deploy --network $(NETWORK)
 
+deploy-with-tl: 
+	npx hardhat deploy-with-tl --use-test-erc20 --network $(NETWORK)
+
 deploy-verify: 
 	npx hardhat deploy --verify --network $(NETWORK)
 
@@ -29,9 +32,12 @@ create-proposal-request:
 execute-proposal-request:
 	npx hardhat run scripts/playground/5-executeProposalRequest.ts --network $(NETWORK)
 
+share-funds:
+	npx hardhat run scripts/playground/6-shareFunds.ts --network $(NETWORK)
+
 #-------------- SETUP ----------------#
 
-setup: deploy setup-tl create-hive update-hive-data join-hive create-proposal-request execute-proposal-request
+setup: deploy-with-tl create-hive update-hive-data join-hive create-proposal-request execute-proposal-request share-funds
 
 #-------------- SUBGRAPH ----------------#
 

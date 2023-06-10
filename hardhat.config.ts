@@ -4,6 +4,7 @@ import '@nomicfoundation/hardhat-toolbox';
 import '@openzeppelin/hardhat-upgrades';
 
 import './scripts/tasks/deploy';
+import './scripts/tasks/deployWithTl';
 
 import dotenv from 'dotenv';
 
