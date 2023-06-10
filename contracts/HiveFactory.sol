@@ -72,7 +72,7 @@ contract HiveFactory {
         );
 
         // Mint TalentLayer ID to Hive
-        uint256 hiveId = _mintTlId(address(hive), _platformId, _groupHandle, msg.value / 2);
+        uint256 hiveId = _mintTlId(address(hive), _platformId, _groupHandle, ownerId == 0 ? msg.value / 2 : msg.value);
 
         // Deploy new Paymaster contract and set it to the Hive
         // TODO: Do this only if the chain is zkSync
