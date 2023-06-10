@@ -1,6 +1,6 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { ethers } from 'hardhat';
-import { ERC20, Hive, HiveFactory, TalentLayerID } from '../typechain-types';
+import { ERC20, Hive, HiveFactory, TalentLayerID, HivePaymaster } from '../typechain-types';
 import { deploy } from '../utils/deploy';
 import { expect } from 'chai';
 import {
@@ -32,8 +32,10 @@ const tests = (isEth: boolean) => {
     hiveFactory: HiveFactory,
     simpleERC20: ERC20,
     hiveAddress: string,
+    paymasterAddress: string,
     tokenAddress: string,
-    hive: Hive;
+    hive: Hive,
+    paymaster: HivePaymaster;
 
   const daveTlId = 1;
   const groupOwnerTlId = 2;
@@ -117,7 +119,11 @@ const tests = (isEth: boolean) => {
       const receipt = await tx.wait();
 
       hiveAddress = receipt.events?.find((e) => e.event === 'HiveCreated')?.args?.hiveAddress;
+      paymasterAddress = receipt.events?.find((e) => e.event === 'HiveCreated')?.args
+        ?.paymasterAddress;
+
       hive = await ethers.getContractAt('Hive', hiveAddress);
+      paymaster = await ethers.getContractAt('HivePaymaster', paymasterAddress);
     });
 
     it('Mints a TalentLayer ID to the owner', async () => {
@@ -148,6 +154,11 @@ const tests = (isEth: boolean) => {
 
       expect(profile.platformId).to.equal(platformId);
       expect(profile.handle).to.equal(groupHandle);
+    });
+
+    it('Sets the paymaster on the hive', async () => {
+      const paymaster = await hive.paymasterAddress();
+      expect(paymaster).to.equal(paymasterAddress);
     });
   });
 
@@ -350,25 +361,45 @@ const tests = (isEth: boolean) => {
       }
     });
 
-    it('Keeps the honey fee in the Hive contract', async () => {
-      const amount = releasedAmount.mul(honeyFee).div(FEE_DIVIDER);
+    // it('Keeps the honey fee in the Hive contract', async () => {
+    //   const amount = releasedAmount.mul(honeyFee).div(FEE_DIVIDER);
+
+    //   if (isEth) {
+    //     await expect(tx).to.changeEtherBalances([hive], [releasedAmount.sub(amount).mul(-1)]);
+    //   } else {
+    //     await expect(tx).to.changeTokenBalances(
+    //       simpleERC20,
+    //       [hive],
+    //       [releasedAmount.sub(amount).mul(-1)],
+    //     );
+    //   }
+
+    //   if (isEth) {
+    //     const hiveBalance = await ethers.provider.getBalance(hive.address);
+    //     expect(hiveBalance).to.be.equal(amount);
+    //   } else {
+    //     const hiveBalance = await simpleERC20.balanceOf(hive.address);
+    //     expect(hiveBalance).to.be.equal(amount);
+    //   }
+    // });
+
+    it('Sends the honey fee to the Paymaster', async () => {
+      const feeAmount = releasedAmount.mul(honeyFee).div(FEE_DIVIDER);
 
       if (isEth) {
-        await expect(tx).to.changeEtherBalances([hive], [releasedAmount.sub(amount).mul(-1)]);
+        await expect(tx).to.changeEtherBalances([paymaster], [feeAmount]);
       } else {
-        await expect(tx).to.changeTokenBalances(
-          simpleERC20,
-          [hive],
-          [releasedAmount.sub(amount).mul(-1)],
-        );
+        await expect(tx).to.changeTokenBalances(simpleERC20, [paymaster], [feeAmount]);
       }
+    });
 
+    it('The hive balance is 0', async () => {
       if (isEth) {
         const hiveBalance = await ethers.provider.getBalance(hive.address);
-        expect(hiveBalance).to.be.equal(amount);
+        expect(hiveBalance).to.be.equal(0);
       } else {
         const hiveBalance = await simpleERC20.balanceOf(hive.address);
-        expect(hiveBalance).to.be.equal(amount);
+        expect(hiveBalance).to.be.equal(0);
       }
     });
 
@@ -431,26 +462,46 @@ const tests = (isEth: boolean) => {
       }
     });
 
-    it('Keeps the honey fee in the Hive contract', async () => {
+    // it('Keeps the honey fee in the Hive contract', async () => {
+    //   const feeAmount = amountToShare.mul(honeyFee).div(FEE_DIVIDER);
+
+    //   if (isEth) {
+    //     await expect(tx).to.changeEtherBalances([hive], [amountToShare.sub(feeAmount).mul(-1)]);
+    //   } else {
+    //     await expect(tx).to.changeTokenBalances(
+    //       simpleERC20,
+    //       [hive],
+    //       [amountToShare.sub(feeAmount).mul(-1)],
+    //     );
+    //   }
+
+    //   const amount = proposalAmount.mul(honeyFee).div(FEE_DIVIDER);
+    //   if (isEth) {
+    //     const hiveBalance = await ethers.provider.getBalance(hive.address);
+    //     expect(hiveBalance).to.be.equal(amount);
+    //   } else {
+    //     const hiveBalance = await simpleERC20.balanceOf(hive.address);
+    //     expect(hiveBalance).to.be.equal(amount);
+    //   }
+    // });
+
+    it('Sends the honey fee to the Paymaster', async () => {
       const feeAmount = amountToShare.mul(honeyFee).div(FEE_DIVIDER);
 
       if (isEth) {
-        await expect(tx).to.changeEtherBalances([hive], [amountToShare.sub(feeAmount).mul(-1)]);
+        await expect(tx).to.changeEtherBalances([paymaster], [feeAmount]);
       } else {
-        await expect(tx).to.changeTokenBalances(
-          simpleERC20,
-          [hive],
-          [amountToShare.sub(feeAmount).mul(-1)],
-        );
+        await expect(tx).to.changeTokenBalances(simpleERC20, [paymaster], [feeAmount]);
       }
+    });
 
-      const amount = proposalAmount.mul(honeyFee).div(FEE_DIVIDER);
+    it('The hive balance is 0', async () => {
       if (isEth) {
         const hiveBalance = await ethers.provider.getBalance(hive.address);
-        expect(hiveBalance).to.be.equal(amount);
+        expect(hiveBalance).to.be.equal(0);
       } else {
         const hiveBalance = await simpleERC20.balanceOf(hive.address);
-        expect(hiveBalance).to.be.equal(amount);
+        expect(hiveBalance).to.be.equal(0);
       }
     });
 
@@ -469,12 +520,19 @@ const tests = (isEth: boolean) => {
     });
 
     it('Send the balance to the user', async () => {
-      const feeAmount = proposalAmount.mul(honeyFee).div(FEE_DIVIDER);
+      // const feeAmount = proposalAmount.mul(honeyFee).div(FEE_DIVIDER);
+      let hiveBalance;
 
       if (isEth) {
-        await expect(tx).to.changeEtherBalances([bob], [feeAmount]);
+        hiveBalance = await ethers.provider.getBalance(hive.address);
       } else {
-        await expect(tx).to.changeTokenBalances(simpleERC20, [bob], [feeAmount]);
+        hiveBalance = await simpleERC20.balanceOf(hive.address);
+      }
+
+      if (isEth) {
+        await expect(tx).to.changeEtherBalances([bob], [hiveBalance]);
+      } else {
+        await expect(tx).to.changeTokenBalances(simpleERC20, [bob], [hiveBalance]);
       }
     });
   });
