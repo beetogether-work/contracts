@@ -1,3 +1,7 @@
 # Bee Together Contracts
 
-HiveFactory: [0xeecFd8a85fbB9BbA5Dac2022C824e1c42C5d9634](https://mumbai.polygonscan.com/address/0xeecFd8a85fbB9BbA5Dac2022C824e1c42C5d9634)
+## zkSync
+
+HiveFactory: [0x98Ef8e54ec2fe89FCdA42d2cbC7F091508Aff5D4](https://goerli.explorer.zksync.io/address/0x98Ef8e54ec2fe89FCdA42d2cbC7F091508Aff5D4)
+
+Example Hive: [0x750bf4e0a0db3f046c95f0fe5b61b2256e888041](https://goerli.explorer.zksync.io/address/0x750bf4e0a0db3f046c95f0fe5b61b2256e888041)
