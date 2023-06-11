@@ -1,7 +1,9 @@
 # Bee Together Contracts
 
-`HiveFactory.sol` is a factory contract for creating instances of Hive.
-A Hive is a collective of freelancers. `Hive.sol` is the contract that allows for the management of the group.
+- `HiveFactory.sol` is a factory contract for creating instances of Hive.
+A Hive is a collective of freelancers.
+- `Hive.sol` is the contract that allows for the management of the group.
+- `HivePaymaster.sol` is the contract that allows group covering gas fees using money earn by working on the platform
 
 ## zkSync
 
