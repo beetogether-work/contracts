@@ -50,25 +50,61 @@ const config: HardhatUserConfig = {
       zksync: true,
     },
     mumbai: {
-      url: 'https://matic-mumbai.chainstacklabs.com',
+      url: 'https://rpc.mumbai.polygon.gateway.fm/',
       accounts,
     },
     zkSyncTestnet: {
       url: 'https://testnet.era.zksync.dev',
       ethNetwork: 'goerli', // Can also be the RPC URL of the network (e.g. `https://goerli.infura.io/v3/<API_KEY>`)
       zksync: true,
-      verifyURL: 'https://zksync2-testnet-explorer.zksync.dev/contract_verification',
+      // verifyURL: 'https://zksync2-testnet-explorer.zksync.dev/contract_verification',
       accounts,
     },
     'mantle-testnet': {
       url: 'https://rpc.testnet.mantle.xyz/',
       accounts,
     },
+    scrollAlpha: {
+      url: 'https://alpha-rpc.scroll.io/l2',
+      accounts,
+    },
+    base: {
+      url: 'https://goerli.base.org',
+      accounts,
+    },
   },
   etherscan: {
     apiKey: {
       polygonMumbai: process.env.POLYGONSCAN_API_KEY || '',
+      'mantle-testnet': 'xyz',
+      scrollAlpha: 'abc',
     },
+    customChains: [
+      {
+        network: 'mantle-testnet',
+        chainId: 5001,
+        urls: {
+          apiURL: 'https://explorer.testnet.mantle.xyz/api',
+          browserURL: 'https://explorer.testnet.mantle.xyz',
+        },
+      },
+      {
+        network: 'scrollAlpha',
+        chainId: 534353,
+        urls: {
+          apiURL: 'https://blockscout.scroll.io/api',
+          browserURL: 'https://blockscout.scroll.io/',
+        },
+      },
+      {
+        network: 'base',
+        chainId: 84531,
+        urls: {
+          apiURL: 'https://goerli.basescan.org/api',
+          browserURL: 'https://goerli.basescan.org/',
+        },
+      },
+    ],
   },
   contractSizer: {
     alphaSort: true,

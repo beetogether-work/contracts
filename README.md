@@ -11,3 +11,9 @@ Example Hive: [0x750bf4e0a0db3f046c95f0fe5b61b2256e888041](https://goerli.explor
 HiveFactory: [0x5FC6c2fE038a79Bb5A5300dEa61162FFd3EaA276](https://explorer.testnet.mantle.xyz/address/0x5FC6c2fE038a79Bb5A5300dEa61162FFd3EaA276)
 
 Example Hive: [0x2ccff465e8065a71196c421943e898f47523233b](https://explorer.testnet.mantle.xyz/address/0x2ccff465e8065a71196c421943e898f47523233b)
+
+## Scroll
+
+HiveFactory: [0x5FC6c2fE038a79Bb5A5300dEa61162FFd3EaA276](https://blockscout.scroll.io/0x5FC6c2fE038a79Bb5A5300dEa61162FFd3EaA276)
+
+Example Hive: [0x2ccFf465E8065A71196C421943E898F47523233b](https://blockscout.scroll.io/0x2ccFf465E8065A71196C421943E898F47523233b)

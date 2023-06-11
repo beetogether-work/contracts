@@ -18,6 +18,12 @@ deploy-zk-sync:
 deploy-mantle: 
 	npx hardhat deploy-with-tl --network mantle-testnet
 
+deploy-scroll: 
+	npx hardhat deploy-with-tl --verify --network scrollAlpha
+
+verify:
+	npx hardhat verify --network $(NETWORK) <CONTRACT_ADDRESS> "Constructor argument 1" "Constructor argument 2"
+
 #-------------- PLAYGROUND ----------------#
 
 setup-tl:
