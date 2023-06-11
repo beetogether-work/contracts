@@ -21,6 +21,9 @@ deploy-mantle:
 deploy-scroll: 
 	npx hardhat deploy-with-tl --verify --network scrollAlpha
 
+deploy-base: 
+	npx hardhat deploy-with-tl --verify --network base-goerli
+
 verify:
 	npx hardhat verify --network $(NETWORK) <CONTRACT_ADDRESS> "Constructor argument 1" "Constructor argument 2"
 

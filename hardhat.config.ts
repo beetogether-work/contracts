@@ -68,7 +68,7 @@ const config: HardhatUserConfig = {
       url: 'https://alpha-rpc.scroll.io/l2',
       accounts,
     },
-    base: {
+    'base-goerli': {
       url: 'https://goerli.base.org',
       accounts,
     },
@@ -78,6 +78,7 @@ const config: HardhatUserConfig = {
       polygonMumbai: process.env.POLYGONSCAN_API_KEY || '',
       'mantle-testnet': 'xyz',
       scrollAlpha: 'abc',
+      'base-goerli': 'PLACEHOLDER_STRING',
     },
     customChains: [
       {
@@ -97,7 +98,7 @@ const config: HardhatUserConfig = {
         },
       },
       {
-        network: 'base',
+        network: 'base-goerli',
         chainId: 84531,
         urls: {
           apiURL: 'https://goerli.basescan.org/api',
